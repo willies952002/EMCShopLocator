@@ -46,7 +46,7 @@ public class ShopSign {
                buyPrice + ":" +
                sellPrice + ":" +
                shopOwner + ":" +
-               item;
+               item + ":" + ResPosition.getResAt(server, pos.getX(), pos.getZ()).resNumber;
     }
     
     public String getUniqueString() {

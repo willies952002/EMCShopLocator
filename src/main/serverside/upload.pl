@@ -4,7 +4,7 @@ use CGI;
 use DBI;
 use DBD::mysql;
 
-my $dbh=DBI->connect("DBI:mysql:database=emcmarket;host=localhost", "emcmarket", "NE6xYRe6UPwW3Ray");
+my $dbh=DBI->connect("DBI:mysql:database=emcmarket;host=localhost", "emcmarket", "NE6xYRe6UPwW3Ray", {AutoCommit => 0 });
 
 my $cgi=CGI->new;
 my $rows=0;
@@ -14,16 +14,17 @@ if ($cgi->param("upload")) {
 		where server=? and x=? and y=? and z=?
 	));
 	my $sthins=$dbh->prepare(qq(
-		insert into signs (server, x, y, z, amount, buy, sell, owner, item)
-		values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		insert into signs (server, x, y, z, amount, buy, sell, owner, item, resnumber)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	));
 	foreach my $row (split("\n", $cgi->param("upload"))) {
-		my ($server, $x, $y, $z, $amount, $buy, $sell, $owner, $item)=
+		my ($server, $x, $y, $z, $amount, $buy, $sell, $owner, $item, $resnumber)=
 			split(":", $row);
 		$sthdel->execute($server, $x, $y, $z);
-		$sthins->execute($server, $x, $y, $z, $amount, $buy, $sell, $owner, $item);
+		$sthins->execute($server, $x, $y, $z, $amount, $buy, $sell, $owner, $item, $resnumber);
 		$rows++;
 	}
+	$dbh->commit;
 }
 
 print qq(Content-type: text/plain\n);
