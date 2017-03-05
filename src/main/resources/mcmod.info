@@ -1,0 +1,16 @@
+[
+{
+  "modid": "emcshoplocator",
+  "name": "Shop Locator",
+  "description": "Locate shop signs on Empire Minecraft, and keep a database of them",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Giselbaer"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

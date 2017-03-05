@@ -1,0 +1,2 @@
+create table signs (server varchar(30), x integer, y integer, z integer, amount integer, buy integer, sell integer, owner varchar(30), item varchar(60));
+create index signs_i1 on signs (server, x, y, z);
