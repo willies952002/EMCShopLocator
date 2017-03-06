@@ -1,7 +1,12 @@
 package de.guntram.mcmod.emcshoplocator;
 
+import de.guntram.mcmod.emcshoplocator.gui.ShopSearchGuiHandler;
+import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyEvent;
+import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyHandler;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,23 +27,31 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
+import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @Mod(modid = EMCShopLocator.MODID, version = EMCShopLocator.VERSION)
 public class EMCShopLocator
 {
+    @Instance
+    public static EMCShopLocator instance;
+    
     public static final String MODID = "emcshoplocator";
     public static final String VERSION = "0.1";
     private Pattern line2Pattern, line3Patternb, line3Patterns, line3Patternbs;
     private Pattern serverNameInfoPattern;
+    private long lastSignUploadTime;
     private long lastSignSaveTime;
     private String serverName;
+    public File configFile;
     
     ArrayList<Chunk> delayedChunks;
     HashMap<String, ShopSign> signs;
@@ -46,9 +59,16 @@ public class EMCShopLocator
     @EventHandler
     public void init(FMLInitializationEvent event)
     {
+        instance=this;
+
         delayedChunks=new ArrayList<Chunk>();
-        signs=new HashMap<String, ShopSign>();
+        if (signs==null) { // which means preInit didn't find any to load
+            signs=new HashMap<String, ShopSign>();
+        }
         MinecraftForge.EVENT_BUS.register(this);
+        NetworkRegistry.INSTANCE.registerGuiHandler(this, new ShopSearchGuiHandler());
+        ShopSearchKeyHandler.init();
+        MinecraftForge.EVENT_BUS.register(new ShopSearchKeyEvent());
         
         line2Pattern=Pattern.compile("^\\d+$");
         line3Patternb=Pattern.compile("^B (\\d+K?)$");
@@ -56,8 +76,13 @@ public class EMCShopLocator
         // The spaces may be omitted. For example: "B14800:14200S" with M4sterMiners beacons.
         line3Patternbs=Pattern.compile("^B ?(\\d+K?) ?: ?(\\d+K?) ?S$");
         serverNameInfoPattern=Pattern.compile("Empire Minecraft - ([^,]+),");
-        lastSignSaveTime=System.currentTimeMillis();
+        lastSignUploadTime=lastSignSaveTime=System.currentTimeMillis();
         serverName="unknown";
+    }
+
+    @EventHandler
+    public void preInit(final FMLPreInitializationEvent event) {
+        signs=SignFile.load(configFile=event.getSuggestedConfigurationFile());
     }
 
     @SideOnly(Side.CLIENT)
@@ -95,15 +120,22 @@ public class EMCShopLocator
         // get some ticks when server/world porting.
         // But we don't want the client to delay while waiting for the disk so
         // do this in another thread.
-        if (lastSignSaveTime + 5*60*1000 < System.currentTimeMillis()) {
+
+        long now=System.currentTimeMillis();
+        if (lastSignUploadTime + 5*60*1000 < now) {
             // Set next time to a long time in the future; when the thread
             // finishes it should reset that time. But if the thread
             // crashes (shouldn't happen, finally {} ...) at least we will
             // recover after a while.
-            lastSignSaveTime = System.currentTimeMillis()+60*60*1000;
+            lastSignUploadTime = now+60*60*1000;
+            System.out.println("uploading sign data");
+            new SignUploaderThread(signs, this).start();
+        }
+
+        if (lastSignSaveTime + 5*60*1000 < now) {
+            lastSignSaveTime = now+60*60*1000;
             System.out.println("saving sign data");
             new SignSaverThread(signs, this).start();
-            signs=new HashMap<String, ShopSign>();
         }
         
         // second part of ugly hack. At least we remove chunks from the list
@@ -129,7 +161,6 @@ public class EMCShopLocator
         for (Chunk chunk:toRemove) {
             delayedChunks.remove(chunk);
         }
-        
     }
 
     @SideOnly(Side.CLIENT)
@@ -196,14 +227,21 @@ public class EMCShopLocator
                         }
                     }
                 }
-                if (shopsign!=null)
+                if (shopsign!=null && !shopsign.equals(signs.get(shopsign.getUniqueString()))) {
                     signs.put(shopsign.getUniqueString(), shopsign);
+                }
             } catch (NumberFormatException ex) {
                     System.out.println(Arrays.toString(ex.getStackTrace()));
             } catch (IllegalArgumentException ex) {
                     System.out.println(Arrays.toString(ex.getStackTrace()));
             }
         }
+        
+        // @TODO: remove signs we have in our database that aren't in the chunk anymore
+    }
+    
+    public Collection<ShopSign> getSigns() {
+        return signs.values();
     }
     
     private int signval(String s) {
@@ -213,32 +251,12 @@ public class EMCShopLocator
             return Integer.parseInt(s);
         }
     }
-    
-    private void dumpTagCompound(NBTTagCompound compound) {
-        dumpTagCompound(compound, 1);
-    }    
-    
-    private void dumpTagCompound(NBTTagCompound compound, int indent) {
-        for (String key:compound.getKeySet()) {
-            for (int i=0; i<indent; i++) {
-                System.out.print('\t');
-            }
-            int type=compound.getTagId(key);
-            if (type==8) {
-                String s=compound.getString(key);
-                System.out.println(key+"\t"+s);
-            } else if (type==10) {
-                NBTTagCompound child=compound.getCompoundTag(key);
-                System.out.println(key+":");
-                dumpTagCompound(child, indent+1);
-            } else {
-                System.out.println(key+"\ttype: "+type);
-            }
-        }
-        String id;
-    }
 
     void setSignSaveDone() {
         lastSignSaveTime = System.currentTimeMillis();
+    }
+
+    void setSignUploadDone() {
+        lastSignUploadTime = System.currentTimeMillis();
     }
 }

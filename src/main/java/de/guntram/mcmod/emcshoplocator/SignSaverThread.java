@@ -5,20 +5,14 @@
  */
 package de.guntram.mcmod.emcshoplocator;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
  *
  * @author gbl
  */
-public class SignSaverThread  extends Thread {
+public class SignSaverThread extends Thread {
 
     HashMap<String, ShopSign> toSave;
     EMCShopLocator emcShopLocator;
@@ -31,25 +25,7 @@ public class SignSaverThread  extends Thread {
     @Override
     public void run() {
         try {
-            HttpURLConnection conn=(HttpURLConnection) new URL("http://minecraft.guntram.de/emcmarket/upload.pl").openConnection();
-            conn.setDoOutput(true);
-            conn.setRequestMethod("POST");
-            StringBuilder upload =new StringBuilder("upload=");
-            for (ShopSign sign: toSave.values()) {
-                upload.append(sign.toString()).append("\n");
-            }
-            conn.setRequestProperty("Content-Length", Integer.toString(upload.length()));
-            conn.setRequestProperty("charset", "utf-8");
-            conn.setUseCaches(false);
-            OutputStream stream=conn.getOutputStream();
-            stream.write(upload.toString().getBytes(StandardCharsets.UTF_8));
-            stream.flush();
-            stream.close();
-            BufferedReader reader=new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String line;
-            while ((line=reader.readLine())!=null)
-                System.out.println(line);
-            reader.close();
+            SignFile.save(toSave, emcShopLocator.configFile);
         } catch (IOException ex) {
             System.out.println("Can not save shop sign info: "+ex);
         } finally {
@@ -57,3 +33,4 @@ public class SignSaverThread  extends Thread {
         }
     }
 }
+

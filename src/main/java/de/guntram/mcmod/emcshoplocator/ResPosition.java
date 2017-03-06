@@ -22,13 +22,13 @@ public class ResPosition {
             System.out.println("no positions for "+server);
             return nullResPosition;
         }
-        System.out.println("search for x="+x+", z="+z+" on "+server);
+        // System.out.println("search for x="+x+", z="+z+" on "+server);
         int min=0;
         int max=list.length-1;
         int mid=min;
         while (min<=max) {
             mid=(min+max)/2;
-            System.out.println("   mid="+mid+", square is "+list[mid].x1+"-"+list[mid].x2+" , "+list[mid].z1+"-"+list[mid].z2);
+            // System.out.println("   mid="+mid+", square is "+list[mid].x1+"-"+list[mid].x2+" , "+list[mid].z1+"-"+list[mid].z2);
             if (list[mid].x1 > x)
                 max=mid-1;
             else if (list[mid].x2 < x)
@@ -40,7 +40,7 @@ public class ResPosition {
             else
                 break;
         }
-        System.out.println("end of loop: mid="+mid+", square is "+list[mid].x1+"-"+list[mid].x2+" , "+list[mid].z1+"-"+list[mid].z2);
+        // System.out.println("end of loop: mid="+mid+", square is "+list[mid].x1+"-"+list[mid].x2+" , "+list[mid].z1+"-"+list[mid].z2);
         if (list[mid].x1 <= x && x <= list[mid].x2
         &&  list[mid].z1 <= z && z <= list[mid].z2)
             return list[mid];
