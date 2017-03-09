@@ -55,7 +55,7 @@ public class SignUploaderThread  extends Thread {
                 sign.markUploaded();
             }
         } catch (IOException ex) {
-            System.out.println("Can not upload shop sign info: "+ex);
+            // System.out.println("Can not upload shop sign info: "+ex);
         } finally {
             emcShopLocator.setSignUploadDone();
         }

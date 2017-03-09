@@ -1,17 +1,14 @@
 package de.guntram.mcmod.emcshoplocator.gui;
 
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraft.client.settings.KeyBinding;
-import org.lwjgl.input.Keyboard;
+import de.guntram.mcmod.emcshoplocator.EMCShopLocator;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.InputEvent;
 
 public class ShopSearchKeyHandler {
-    
-    @SideOnly(Side.CLIENT)
-    public static KeyBinding showGui;
-    
-    public static void init() {
-        ClientRegistry.registerKeyBinding(showGui = new KeyBinding("key.shopsearch", Keyboard.KEY_APOSTROPHE, "key.categories.emcshoplocator"));
+    @SubscribeEvent
+    public void keyPressed(final InputEvent.KeyInputEvent e) {
+        if (ShopSearchKeyRegistration.showGui.isPressed())
+            Minecraft.getMinecraft().player.openGui(EMCShopLocator.instance, ShopSearchGuiHandler.ShopSearchGui, Minecraft.getMinecraft().world, 0, 0, 0);
     }
 }

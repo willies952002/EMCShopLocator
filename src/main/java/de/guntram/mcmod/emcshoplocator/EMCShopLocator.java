@@ -1,11 +1,11 @@
 package de.guntram.mcmod.emcshoplocator;
 
+import de.guntram.mcmod.emcshoplocator.events.ChooseChestEventHandler;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchGuiHandler;
-import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyEvent;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyHandler;
+import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyRegistration;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
@@ -15,7 +15,6 @@ import java.util.regex.Pattern;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntitySign;
 import net.minecraft.util.math.BlockPos;
@@ -45,12 +44,11 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "0.1";
-    private Pattern line2Pattern, line3Patternb, line3Patterns, line3Patternbs;
+    public static final String VERSION = "1.0";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
-    private String serverName;
+    public String serverName;
     public File configFile;
     
     ArrayList<Chunk> delayedChunks;
@@ -67,14 +65,10 @@ public class EMCShopLocator
         }
         MinecraftForge.EVENT_BUS.register(this);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new ShopSearchGuiHandler());
-        ShopSearchKeyHandler.init();
-        MinecraftForge.EVENT_BUS.register(new ShopSearchKeyEvent());
+        ShopSearchKeyRegistration.init();
+        MinecraftForge.EVENT_BUS.register(new ShopSearchKeyHandler());
+        MinecraftForge.EVENT_BUS.register(new ChooseChestEventHandler(this));
         
-        line2Pattern=Pattern.compile("^\\d+$");
-        line3Patternb=Pattern.compile("^B (\\d+K?)$");
-        line3Patterns=Pattern.compile("^(\\d+K?) S$");
-        // The spaces may be omitted. For example: "B14800:14200S" with M4sterMiners beacons.
-        line3Patternbs=Pattern.compile("^B ?(\\d+K?) ?: ?(\\d+K?) ?S$");
         serverNameInfoPattern=Pattern.compile("Empire Minecraft - ([^,]+),");
         lastSignUploadTime=lastSignSaveTime=System.currentTimeMillis();
         serverName="unknown";
@@ -128,7 +122,7 @@ public class EMCShopLocator
             // crashes (shouldn't happen, finally {} ...) at least we will
             // recover after a while.
             lastSignUploadTime = now+60*60*1000;
-            System.out.println("uploading sign data");
+            // System.out.println("uploading sign data");
             new SignUploaderThread(signs, this).start();
         }
 
@@ -171,7 +165,7 @@ public class EMCShopLocator
         // System.out.println("try to find server name in "+message.getUnformattedText());
         if (matcher.find()) {
             serverName=matcher.group(1);
-            System.out.println("setting server name to "+serverName);
+            // System.out.println("setting server name to "+serverName);
         }
     }
    
@@ -209,49 +203,25 @@ public class EMCShopLocator
             TileEntitySign sign=(TileEntitySign) entity;
             // System.out.println("found sign at "+pos+" second row is '"+sign.signText[1].getUnformattedText()+"' and third is '"+sign.signText[2].getUnformattedText()+"'");
             try {
-                ShopSign shopsign=null;
-                if (line2Pattern.matcher(sign.signText[1].getUnformattedText()).matches()) {
-                    Matcher m;
-                    String buySell=sign.signText[2].getUnformattedText();
-                    m=line3Patternb.matcher(buySell);
-                    if (m.matches())
-                        shopsign=new ShopSign(sign, serverName, signval(m.group(1)), -1);
-                    else {
-                        m=line3Patterns.matcher(buySell);
-                        if (m.matches())
-                            shopsign=new ShopSign(sign, serverName, -1, signval(m.group(1)));
-                        else {
-                        m=line3Patternbs.matcher(buySell);
-                        if (m.matches())
-                            shopsign=new ShopSign(sign, serverName, signval(m.group(1)), signval(m.group(2)));
-                        }
-                    }
-                }
-                if (shopsign!=null && !shopsign.equals(signs.get(shopsign.getUniqueString()))) {
-                    signs.put(shopsign.getUniqueString(), shopsign);
-                }
-            } catch (NumberFormatException ex) {
-                    System.out.println(Arrays.toString(ex.getStackTrace()));
+                ShopSign shopsign=new ShopSign(sign, serverName);
             } catch (IllegalArgumentException ex) {
-                    System.out.println(Arrays.toString(ex.getStackTrace()));
+                ;
             }
         }
         
         // @TODO: remove signs we have in our database that aren't in the chunk anymore
     }
     
+    public void addSign(ShopSign shopsign) {
+        if (shopsign!=null && !shopsign.equals(signs.get(shopsign.getUniqueString()))) {
+            signs.put(shopsign.getUniqueString(), shopsign);
+        }
+    }
+    
     public Collection<ShopSign> getSigns() {
         return signs.values();
     }
     
-    private int signval(String s) {
-        if (s.endsWith("K")) {
-            return Integer.parseInt(s.substring(0, s.length()-1))*1000;
-        } else {
-            return Integer.parseInt(s);
-        }
-    }
-
     void setSignSaveDone() {
         lastSignSaveTime = System.currentTimeMillis();
     }

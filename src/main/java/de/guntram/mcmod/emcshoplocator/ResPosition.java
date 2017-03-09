@@ -44,7 +44,7 @@ public class ResPosition {
         if (list[mid].x1 <= x && x <= list[mid].x2
         &&  list[mid].z1 <= z && z <= list[mid].z2)
             return list[mid];
-        System.out.println("Didnt find res at "+x+"/"+z+" on server "+server);
+        // System.out.println("Didnt find res at "+x+"/"+z+" on server "+server);
         return nullResPosition;
     }
 }

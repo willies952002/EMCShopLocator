@@ -76,7 +76,7 @@ public class FoundShopsScrollList extends GuiScrollingList {
     @Override
     protected int getSize() {
         return (signs==null ? 0 
-                : signs.length < (bottom-top/slotHeight) ? (bottom-top)/slotHeight
+                : signs.length < ((bottom-top)/slotHeight) ? (bottom-top)/slotHeight
                 : signs.length);
     }
 
@@ -100,7 +100,7 @@ public class FoundShopsScrollList extends GuiScrollingList {
     protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
         if (signs==null || slotIdx >= signs.length)
                 return;
-        mc.fontRenderer.drawString(signs[slotIdx].getServer(), this.left+2, slotTop+2, 0xffffff);
+        mc.fontRenderer.drawString(signs[slotIdx].getServer().substring(0, 4), this.left+2, slotTop+2, 0xffffff);
         mc.fontRenderer.drawString(String.format("%.2f", getChosenPricePerItem(signs[slotIdx])), this.left+30, slotTop+2, 0xffffff);
         mc.fontRenderer.drawString(Integer.toString(signs[slotIdx].getRes()), this.left+80, slotTop+2, 0xffffff);
         mc.fontRenderer.drawString(signs[slotIdx].getShopOwner(), this.left+130, slotTop+2, 0xffffff);

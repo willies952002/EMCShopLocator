@@ -39,6 +39,8 @@ public class ShopSearchGui extends GuiScreen {
                     "  y="+sign.getPos().getY()+
                     "  z="+sign.getPos().getZ()+
                     "", this.width/2+2, this.height-80, 0xffffff);
+            if (sign.getChoosePosition()!=-1)
+                mc.fontRenderer.drawString("Choose sign, position "+sign.getChoosePosition(), this.width/2+2, this.height-60, 0xffffff);
         }
         
     }

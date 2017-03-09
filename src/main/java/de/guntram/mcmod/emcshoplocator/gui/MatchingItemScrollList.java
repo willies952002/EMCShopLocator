@@ -39,7 +39,7 @@ public class MatchingItemScrollList extends GuiScrollingList {
     @Override
     protected int getSize() {
         return itemNames==null ? 0 
-                : itemNames.length < (bottom-top/slotHeight) ? (bottom-top)/slotHeight
+                : itemNames.length < ((bottom-top)/slotHeight) ? (bottom-top)/slotHeight
                 : itemNames.length;
     }
 
@@ -47,7 +47,7 @@ public class MatchingItemScrollList extends GuiScrollingList {
     protected void elementClicked(int index, boolean doubleClick) {
         if (itemNames!=null && index<itemNames.length) {
             String item=itemNames[index];
-            System.out.println("Itemlist chosen :"+item);
+            // System.out.println("Itemlist chosen :"+item);
             gui.itemChosen(item);
             selectedIndex=index;
         }
