@@ -21,7 +21,7 @@ public class ShopSearchGui extends GuiScreen {
     public void drawScreen (int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
-        drawCenteredString(fontRenderer, "Shop search", width/2, 20, 0xffffff);
+        drawCenteredString(fontRenderer, "Shop search - "+EMCShopLocator.instance.getSignCount()+" signs", width/2, 20, 0xffffff);
         pattern.drawTextBox();
         matchingStrings.drawScreen(mouseX, mouseY, partialTicks);
         foundShops.drawScreen(mouseX, mouseY, partialTicks);

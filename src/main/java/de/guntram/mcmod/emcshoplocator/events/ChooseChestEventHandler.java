@@ -1,6 +1,7 @@
 package de.guntram.mcmod.emcshoplocator.events;
 
 import de.guntram.mcmod.emcshoplocator.EMCShopLocator;
+import de.guntram.mcmod.emcshoplocator.NotAShopSignException;
 import de.guntram.mcmod.emcshoplocator.ShopSign;
 import java.util.HashSet;
 import net.minecraft.block.Block;
@@ -131,8 +132,8 @@ public class ChooseChestEventHandler {
                         }
                     }
                 }
-            } catch (IllegalArgumentException ex) {
-                
+            } catch (NotAShopSignException ex) {
+                System.out.println("Choose sign is not a shop sign: "+ex.getMessage());
             }
             playerOpenedContainer=null;
         }

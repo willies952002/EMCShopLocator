@@ -25,7 +25,7 @@ public class SignSaverThread extends Thread {
     @Override
     public void run() {
         try {
-            SignFile.save(toSave, emcShopLocator.configFile);
+            SignFile.save(toSave);
         } catch (IOException ex) {
             System.out.println("Can not save shop sign info: "+ex);
         } finally {

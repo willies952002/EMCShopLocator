@@ -44,7 +44,7 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "1.01";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -76,7 +76,8 @@ public class EMCShopLocator
 
     @EventHandler
     public void preInit(final FMLPreInitializationEvent event) {
-        signs=SignFile.load(configFile=event.getSuggestedConfigurationFile());
+        SignFile.setConfigFile(configFile=event.getSuggestedConfigurationFile());
+        signs=SignFile.load();
     }
 
     @SideOnly(Side.CLIENT)
@@ -89,6 +90,7 @@ public class EMCShopLocator
             if ((serverName=Minecraft.getMinecraft().getCurrentServerData().serverName)==null)
                 serverName="unknown";
         }
+        // signs=SignFile.load();
     }
 
     @SideOnly(Side.CLIENT)
@@ -204,8 +206,9 @@ public class EMCShopLocator
             // System.out.println("found sign at "+pos+" second row is '"+sign.signText[1].getUnformattedText()+"' and third is '"+sign.signText[2].getUnformattedText()+"'");
             try {
                 ShopSign shopsign=new ShopSign(sign, serverName);
-            } catch (IllegalArgumentException ex) {
-                ;
+                addSign(shopsign);
+            } catch (NotAShopSignException ex) {
+                // System.out.println("Not a shop sign "+ex.getMessage());
             }
         }
         
@@ -220,6 +223,10 @@ public class EMCShopLocator
     
     public Collection<ShopSign> getSigns() {
         return signs.values();
+    }
+    
+    public int getSignCount() {
+        return signs.size();
     }
     
     void setSignSaveDone() {

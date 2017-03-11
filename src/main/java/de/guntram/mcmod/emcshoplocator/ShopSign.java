@@ -5,7 +5,6 @@
  */
 package de.guntram.mcmod.emcshoplocator;
 
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.tileentity.TileEntitySign;
@@ -36,7 +35,7 @@ public class ShopSign {
         line3Patternbs=Pattern.compile("^B ?(\\d+K?) ?: ?(\\d+K?) ?S$");
     };
 
-    public ShopSign(TileEntitySign sign, String serverName, int choosePosition, String itemName) {
+    public ShopSign(TileEntitySign sign, String serverName, int choosePosition, String itemName) throws NotAShopSignException {
         this(sign, serverName);
         this.choosePosition=choosePosition;
         this.itemName=itemName;
@@ -45,31 +44,36 @@ public class ShopSign {
     // this code assumes the sign has already been checked for shop-sign-ness.
     // Throws IllegalArgumentException if obviously not a shop sign.
 
-    public ShopSign(TileEntitySign sign, String serverName) {
+    public ShopSign(TileEntitySign sign, String serverName) throws NotAShopSignException {
         try {
             if (line2Pattern.matcher(sign.signText[1].getUnformattedText()).matches()) {
                 Matcher m;
                 String buySell=sign.signText[2].getUnformattedText();
                 m=line3Patternb.matcher(buySell);
-                if (m.matches())
+                if (m.matches()) {
                     init(sign, serverName, signval(m.group(1)), -1);
-                else {
+                    return;
+                } else {
                     m=line3Patterns.matcher(buySell);
-                    if (m.matches())
+                    if (m.matches()) {
                         init(sign, serverName, -1, signval(m.group(1)));
-                    else {
-                    m=line3Patternbs.matcher(buySell);
-                    if (m.matches())
-                        init(sign, serverName, signval(m.group(1)), signval(m.group(2)));
+                        return;
+                    } else {
+                        m=line3Patternbs.matcher(buySell);
+                        if (m.matches()) {
+                            init(sign, serverName, signval(m.group(1)), signval(m.group(2)));
+                            return;
+                        }
                     }
                 }
             }
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(ex);
+            throw new NotAShopSignException(sign, ex);
         }
+        throw new NotAShopSignException(sign);        
     }
 
-    private void init(TileEntitySign sign, String servername, int buy, int sell) {
+    private void init(TileEntitySign sign, String servername, int buy, int sell) throws NotAShopSignException {
         server=servername;
         pos=sign.getPos();
         shopOwner=sign.signText[0].getUnformattedText();
@@ -81,7 +85,7 @@ public class ShopSign {
             buyPrice=buy;
             sellPrice=sell;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Not a shop sign", e);
+            throw new NotAShopSignException(sign, e);
         }
         uploaded=false;
         lastSeenTime=System.currentTimeMillis();
@@ -141,13 +145,24 @@ public class ShopSign {
     }
     
     public String getUniqueString() {
-        String result= server+":"+
-                pos.getX()+":"+
-                pos.getY()+":"+
-                pos.getZ();
-        if (choosePosition!=0)
-            result+=":"+choosePosition;
-        return result;
+        try {
+            String result= server+":"+
+                    pos.getX()+":"+
+                    pos.getY()+":"+
+                    pos.getZ();
+            if (choosePosition!=-1)
+                result+=":"+choosePosition;
+            return result;
+        } catch (NullPointerException ex) {
+            System.out.println("in getUniqueString: ");
+            System.out.println("  server: "+(server==null ? "null" : server));
+            if (pos==null) {
+                System.out.println("  pos=null");
+            } else {
+                System.out.println("pos= "+pos.getX()+"/"+pos.getY()+"/"+pos.getZ());
+            }
+            return "dummy";
+        }
     }
     
     public boolean isUploaded() { return uploaded; }

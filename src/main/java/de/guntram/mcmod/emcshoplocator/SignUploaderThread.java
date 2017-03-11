@@ -13,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import net.minecraft.client.Minecraft;
 
 /**
  *
@@ -34,7 +35,9 @@ public class SignUploaderThread  extends Thread {
             HttpURLConnection conn=(HttpURLConnection) new URL("http://minecraft.guntram.de/emcmarket/upload.pl").openConnection();
             conn.setDoOutput(true);
             conn.setRequestMethod("POST");
-            StringBuilder upload =new StringBuilder("upload=");
+            StringBuilder upload =new StringBuilder();
+            upload.append("name=").append(Minecraft.getMinecraft().getSession().getUsername());
+            upload.append("&upload=");
             for (ShopSign sign: toSave.values()) {
                 if (!sign.isUploaded())
                     upload.append(sign.toString()).append("\n");

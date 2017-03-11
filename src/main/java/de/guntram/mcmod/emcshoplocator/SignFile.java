@@ -7,11 +7,15 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import net.minecraft.client.Minecraft;
 
 class SignFile {
-    public static HashMap<String, ShopSign> load(File configFile) {
+    
+    private static File configFile;
+    
+    public static HashMap<String, ShopSign> load() {
         HashMap<String, ShopSign> result=new HashMap<String, ShopSign>();
-        File saveFile=signFile(configFile);
+        File saveFile=signFile();
         BufferedReader reader;
         try {
             String s;
@@ -32,8 +36,8 @@ class SignFile {
         }
     }
     
-    public static void save(HashMap<String, ShopSign> signs, File configFile) throws IOException {
-        File saveFile=signFile(configFile);
+    public static void save(HashMap<String, ShopSign> signs) throws IOException {
+        File saveFile=signFile();
         BufferedWriter writer;
         writer=new BufferedWriter(new FileWriter(saveFile));
         for (ShopSign sign: signs.values()) {
@@ -44,7 +48,11 @@ class SignFile {
         System.out.println(Integer.toString(signs.size())+" signs saved");
     }
     
-    private static File signFile(File configFile) {
-        return new File(configFile.getAbsolutePath()+".signdata");
+    public static void setConfigFile(File configFile) {
+        SignFile.configFile=configFile;
+    }
+    
+    private static File signFile() {
+        return new File(configFile.getAbsolutePath()+"."+Minecraft.getMinecraft().getSession().getUsername()+".signs");
     }
 }
