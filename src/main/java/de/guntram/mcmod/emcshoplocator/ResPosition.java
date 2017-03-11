@@ -19,7 +19,7 @@ public class ResPosition {
     static ResPosition getResAt(String server, int x, int z) {
         ResPosition[] list=ResInit.positions.get(server.toLowerCase());
         if (list==null || list.length==0) {
-            System.out.println("no positions for "+server);
+            System.err.println("no positions for "+server);
             return nullResPosition;
         }
         // System.out.println("search for x="+x+", z="+z+" on "+server);

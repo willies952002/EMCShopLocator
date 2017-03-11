@@ -10,8 +10,8 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle.forge'
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-
-version = "1.01"
+// journeymap_api_version = "1.11-1.3"
+version = "1.1.0"
 group = "de.guntram.mcmod.ShopLocator" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "EMCShopLocator"
 
@@ -31,6 +31,19 @@ minecraft {
     // simply re-run your setup task after changing the mappings to update your workspace.
     mappings = "snapshot_20170226"
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+}
+
+repositories {
+    // JourneyMap API releases are here
+    mavenCentral()
+
+    // JourneyMap API snapshots are here
+    maven { url 'https://oss.sonatype.org/service/local/repositories/snapshots/content/' }
+}
+
+configurations.all {
+    // Check for snapshots more frequently than Gradle's default of 1 day. 0 = every build.
+    resolutionStrategy.cacheChangingModulesFor 86400, 'seconds'
 }
 
 dependencies {
@@ -54,6 +67,7 @@ dependencies {
     // for more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+    compile group: "info.journeymap", name: "journeymap-api", version: "1.11-1.3-SNAPSHOT", changing: true
 
 }
 

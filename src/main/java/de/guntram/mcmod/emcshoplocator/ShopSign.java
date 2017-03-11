@@ -154,12 +154,12 @@ public class ShopSign {
                 result+=":"+choosePosition;
             return result;
         } catch (NullPointerException ex) {
-            System.out.println("in getUniqueString: ");
-            System.out.println("  server: "+(server==null ? "null" : server));
+            System.err.println("in getUniqueString: ");
+            System.err.println("  server: "+(server==null ? "null" : server));
             if (pos==null) {
-                System.out.println("  pos=null");
+                System.err.println("  pos=null");
             } else {
-                System.out.println("pos= "+pos.getX()+"/"+pos.getY()+"/"+pos.getZ());
+                System.err.println("pos= "+pos.getX()+"/"+pos.getY()+"/"+pos.getZ());
             }
             return "dummy";
         }

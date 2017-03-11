@@ -133,7 +133,7 @@ public class ChooseChestEventHandler {
                     }
                 }
             } catch (NotAShopSignException ex) {
-                System.out.println("Choose sign is not a shop sign: "+ex.getMessage());
+                System.err.println("Choose sign is not a shop sign: "+ex.getMessage());
             }
             playerOpenedContainer=null;
         }
