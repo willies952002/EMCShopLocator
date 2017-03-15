@@ -77,7 +77,7 @@ public class ShopSign {
         server=servername;
         pos=sign.getPos();
         shopOwner=sign.signText[0].getUnformattedText();
-        itemName=sign.signText[3].getUnformattedText();
+        itemName=sign.signText[3].getUnformattedText().replace(':', '_');
         choosePosition=-1;       // will may reset in choose-constructor
         try {
             buyPrice=sellPrice=-1;

@@ -16,6 +16,7 @@ import net.minecraftforge.fml.common.network.IGuiHandler;
 public class ShopSearchGuiHandler implements IGuiHandler {
     
     public static final int ShopSearchGui=0;
+    private static ShopSearchGui guiInstance;
 
     @Override
     public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
@@ -24,8 +25,14 @@ public class ShopSearchGuiHandler implements IGuiHandler {
 
     @Override
     public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-        if (ID==ShopSearchGui)
-            return new ShopSearchGui();
+        if (ID==ShopSearchGui) {
+            if (guiInstance==null) {
+                System.out.println("new gui!");
+                guiInstance=new ShopSearchGui();
+            }
+            System.out.println("return :"+guiInstance);
+            return guiInstance;
+        }
         return null;
     }
 }

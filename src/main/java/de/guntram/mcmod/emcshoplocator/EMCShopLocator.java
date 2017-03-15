@@ -44,7 +44,7 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.2.0";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -68,6 +68,9 @@ public class EMCShopLocator
         ShopSearchKeyRegistration.init();
         MinecraftForge.EVENT_BUS.register(new ShopSearchKeyHandler());
         MinecraftForge.EVENT_BUS.register(new ChooseChestEventHandler(this));
+        
+        // init the xaero waypoint maker; we don't need to do this with JourneyMap due to how the JM API works
+        new de.guntram.mcmod.emcshoplocator.XaeroMiniMap.ShopWaypointMaker().initialize();
         
         serverNameInfoPattern=Pattern.compile("Empire Minecraft - ([^,]+),");
         lastSignUploadTime=lastSignSaveTime=System.currentTimeMillis();

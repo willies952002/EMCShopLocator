@@ -18,7 +18,8 @@ public class ShopSearchGui extends GuiScreen {
     private GuiTextField pattern;
     private MatchingItemScrollList matchingStrings;
     private FoundShopsScrollList foundShops;
-    
+    private boolean inited=false;
+
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=130;
     private final int xyzx1=170, xyzx2=200;
@@ -27,6 +28,11 @@ public class ShopSearchGui extends GuiScreen {
     private static BlockPos newWaypointPos;
     private static String shopName;
     
+    ShopSearchGui() {
+        super();
+        System.out.println("new ShopSearchGui (constructor)");
+    }
+
     @Override
     public void drawScreen (int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
@@ -87,13 +93,18 @@ public class ShopSearchGui extends GuiScreen {
     
     @Override
     public void initGui() {
-        this.pattern=new GuiTextField(0, fontRenderer, 20, 45, this.width/2-40, 20);
-        this.pattern.setFocused(true);
+        if (!inited) {
+            System.out.println("init shop search gui");
+            this.pattern=new GuiTextField(0, fontRenderer, 20, 45, this.width/2-40, 20);
+            this.pattern.setFocused(true);
+            this.matchingStrings=new MatchingItemScrollList(this, mc, this.width/2-40, this.height, 80, this.height-50, 20, 20);
+            this.foundShops=new FoundShopsScrollList(mc, this.width/2-40, this.height, 45, this.height-170, this.width/2+20, 20);
+            newWaypointPos=null;
+        }
+        // Seems like the buttons get reset every time the GUI closes so we have to re-add them
         buttonList.add(search=new GuiButton(0, 20, this.height-30, "Search"));
         buttonList.add(close =new GuiButton(1, this.width-220, this.height-30, "Close"));
-        this.matchingStrings=new MatchingItemScrollList(this, mc, this.width/2-40, this.height, 80, this.height-50, 20, 20);
-        this.foundShops=new FoundShopsScrollList(mc, this.width/2-40, this.height, 45, this.height-170, this.width/2+20, 20);
-        newWaypointPos=null;
+        inited=true;
     }
     
     @Override
