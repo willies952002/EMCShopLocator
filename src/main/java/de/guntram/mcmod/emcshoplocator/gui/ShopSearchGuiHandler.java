@@ -27,10 +27,10 @@ public class ShopSearchGuiHandler implements IGuiHandler {
     public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
         if (ID==ShopSearchGui) {
             if (guiInstance==null) {
-                System.out.println("new gui!");
+                // System.out.println("new gui!");
                 guiInstance=new ShopSearchGui();
             }
-            System.out.println("return :"+guiInstance);
+            // System.out.println("return :"+guiInstance);
             return guiInstance;
         }
         return null;

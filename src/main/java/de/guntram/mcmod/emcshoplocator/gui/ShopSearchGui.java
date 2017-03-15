@@ -32,7 +32,7 @@ public class ShopSearchGui extends GuiScreen {
     
     ShopSearchGui() {
         super();
-        System.out.println("new ShopSearchGui (constructor)");
+        // System.out.println("new ShopSearchGui (constructor)");
     }
 
     @Override
@@ -96,7 +96,7 @@ public class ShopSearchGui extends GuiScreen {
     @Override
     public void initGui() {
         if (!inited) {
-            System.out.println("init shop search gui");
+            // System.out.println("init shop search gui");
             this.pattern=new GuiTextField(0, fontRenderer, 20, 45, this.width/2-40, 20);
             this.pattern.setFocused(true);
             this.matchingStrings=new MatchingItemScrollList(this, mc, this.width/2-40, this.height, 80, this.height-50, 20, 20);

@@ -39,7 +39,7 @@ public class ShopWaypointMaker {
         if ((pos=ShopSearchGui.getJourneyMapNewWaypointPos())!=null) {
             IXaeroMinimap xaero;
             xaero=XaeroMinimap.instance;
-            System.out.println("trying to add WP, instance="+xaero);
+            // System.out.println("trying to add WP, instance="+xaero);
             Minimap minimap = xaero.getInterfaces().getMinimap();
             final Waypoint created = new Waypoint(pos.getX(), pos.getY(), pos.getZ(),
                     ShopSearchGui.getJourneyMapShopName(), "Shop", 0);
