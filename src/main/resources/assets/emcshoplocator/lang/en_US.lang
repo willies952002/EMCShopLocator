@@ -1,2 +1,7 @@
 key.categories.emcshoplocator=Empire Minecraft Shop Location database
 key.shopsearch=Search shops
+
+button.search=Search
+button.close=Close
+button.buy=Buy
+button.sell=Sell

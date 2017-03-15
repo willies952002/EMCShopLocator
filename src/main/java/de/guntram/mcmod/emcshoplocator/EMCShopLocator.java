@@ -70,7 +70,11 @@ public class EMCShopLocator
         MinecraftForge.EVENT_BUS.register(new ChooseChestEventHandler(this));
         
         // init the xaero waypoint maker; we don't need to do this with JourneyMap due to how the JM API works
-        new de.guntram.mcmod.emcshoplocator.XaeroMiniMap.ShopWaypointMaker().initialize();
+        try {
+            new de.guntram.mcmod.emcshoplocator.XaeroMiniMap.ShopWaypointMaker().initialize();
+        } catch (NoClassDefFoundError error) {
+            System.err.println("Xaero Minimap not found, won't try to use it");
+        }
         
         serverNameInfoPattern=Pattern.compile("Empire Minecraft - ([^,]+),");
         lastSignUploadTime=lastSignSaveTime=System.currentTimeMillis();

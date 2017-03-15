@@ -23,6 +23,7 @@ public class FoundShopsScrollList extends GuiScrollingList {
     private final Minecraft mc;
     private boolean useSellPrice;
     private int selectedIndex;
+    private int ignoredAtTop, ignoredAtBottom;
 
     public FoundShopsScrollList(Minecraft client, int width, int height, int top, int bottom, int left, int entryHeight) {
         super(client, width, height, top, bottom, left, entryHeight);
@@ -38,19 +39,27 @@ public class FoundShopsScrollList extends GuiScrollingList {
     }
     
     private void resort() {
-        Arrays.sort(this.signs, new Comparator<ShopSign>() {
-            @Override
-            public int compare (ShopSign a, ShopSign b) {
-                double result=getChosenPricePerItem(a) - getChosenPricePerItem(b);
-                if (result < -0.01)
-                    return -1;
-                else if (result > 0.01)
-                    return 1;
-                else
-                    return 0;
-                
-            }
-        });
+        ignoredAtTop=ignoredAtBottom=0;
+        if (this.signs!=null) {
+            Arrays.sort(this.signs, new Comparator<ShopSign>() {
+                @Override
+                public int compare (ShopSign a, ShopSign b) {
+                    double result=getChosenPricePerItem(a) - getChosenPricePerItem(b);
+                    if (useSellPrice)       // when selling, highest price top
+                        result=-result;
+                    if (result < -0.01)
+                        return -1;
+                    else if (result > 0.01)
+                        return 1;
+                    else
+                        return 0;
+                }
+            });
+            while (ignoredAtTop<signs.length && getChosenPrice(signs[ignoredAtTop])==-1)
+                ignoredAtTop++;
+            while (ignoredAtBottom<signs.length && getChosenPrice(signs[signs.length-1-ignoredAtBottom])==-1)
+                ignoredAtBottom++;
+        }
     }
     
     public void setUseSellPrice(boolean b) {
@@ -76,19 +85,19 @@ public class FoundShopsScrollList extends GuiScrollingList {
     @Override
     protected int getSize() {
         return (signs==null ? 0 
-                : signs.length < ((bottom-top)/slotHeight) ? (bottom-top)/slotHeight
-                : signs.length);
+                : signs.length-ignoredAtTop-ignoredAtBottom< ((bottom-top)/slotHeight) ? (bottom-top)/slotHeight
+                : signs.length-ignoredAtTop-ignoredAtBottom);
     }
 
     @Override
     protected void elementClicked(int index, boolean doubleClick) {
-        if (signs!=null && index < signs.length)
-            selectedIndex=index;
+        if (signs!=null && index < signs.length-ignoredAtTop-ignoredAtBottom)
+            selectedIndex=index+ignoredAtTop;
     }
 
     @Override
     protected boolean isSelected(int index) {
-        return selectedIndex==index;
+        return selectedIndex==index+ignoredAtTop;
     }
 
     @Override
@@ -98,8 +107,9 @@ public class FoundShopsScrollList extends GuiScrollingList {
 
     @Override
     protected void drawSlot(int slotIdx, int entryRight, int slotTop, int slotBuffer, Tessellator tess) {
-        if (signs==null || slotIdx >= signs.length)
+        if (signs==null || slotIdx<0 || slotIdx >= signs.length-ignoredAtBottom-ignoredAtTop)
                 return;
+        slotIdx+=ignoredAtTop;
         mc.fontRenderer.drawString(signs[slotIdx].getServer().substring(0, 4), this.left+2, slotTop+2, 0xffffff);
         mc.fontRenderer.drawString(String.format("%.2f", getChosenPricePerItem(signs[slotIdx])), this.left+30, slotTop+2, 0xffffff);
         mc.fontRenderer.drawString(Integer.toString(signs[slotIdx].getRes()), this.left+80, slotTop+2, 0xffffff);

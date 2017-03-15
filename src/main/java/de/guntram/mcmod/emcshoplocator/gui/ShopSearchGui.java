@@ -10,15 +10,17 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
 
 public class ShopSearchGui extends GuiScreen {
     
-    private GuiButton search, close;
+    private GuiButton search, close, buy, sell;
     private GuiTextField pattern;
     private MatchingItemScrollList matchingStrings;
     private FoundShopsScrollList foundShops;
     private boolean inited=false;
+    private boolean useSellPrice=false;
 
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=130;
@@ -98,12 +100,15 @@ public class ShopSearchGui extends GuiScreen {
             this.pattern=new GuiTextField(0, fontRenderer, 20, 45, this.width/2-40, 20);
             this.pattern.setFocused(true);
             this.matchingStrings=new MatchingItemScrollList(this, mc, this.width/2-40, this.height, 80, this.height-50, 20, 20);
-            this.foundShops=new FoundShopsScrollList(mc, this.width/2-40, this.height, 45, this.height-170, this.width/2+20, 20);
+            this.foundShops=new FoundShopsScrollList(mc, this.width/2-40, this.height, 80, this.height-170, this.width/2+20, 20);
             newWaypointPos=null;
         }
         // Seems like the buttons get reset every time the GUI closes so we have to re-add them
-        buttonList.add(search=new GuiButton(0, 20, this.height-30, "Search"));
-        buttonList.add(close =new GuiButton(1, this.width-220, this.height-30, "Close"));
+        buttonList.add(search=new GuiButton(0, 20, this.height-30, I18n.format("button.search")));
+        buttonList.add(close =new GuiButton(1, this.width-220, this.height-30, I18n.format("button.close")));
+        buttonList.add(buy   =new GuiButton(2, this.width/2+20, 45, 40, 20, I18n.format("button.buy")));
+        buttonList.add(sell  =new GuiButton(3, this.width-60, 45, 40, 20, I18n.format("button.sell")));
+        markBuyOrSell();
         inited=true;
     }
     
@@ -112,7 +117,7 @@ public class ShopSearchGui extends GuiScreen {
         if (button==close) {
             mc.displayGuiScreen(null);
             mc.setIngameFocus();
-        } else {
+        } else if (button==search) {
             HashSet<String> items=new HashSet<String>();
             String searchText=pattern.getText();
             Pattern regex=Pattern.compile(searchText, Pattern.CASE_INSENSITIVE);
@@ -122,6 +127,12 @@ public class ShopSearchGui extends GuiScreen {
                     items.add(itemName);
             }
             matchingStrings.setItems(items.toArray(new String[items.size()]));
+        } else if (button==buy) {
+            useSellPrice=false;
+            markBuyOrSell();
+        } else if (button==sell) {
+            useSellPrice=true;
+            markBuyOrSell();
         }
     }
     
@@ -154,5 +165,16 @@ public class ShopSearchGui extends GuiScreen {
     
     public static String getJourneyMapShopName() {
         return shopName;
+    }
+    
+    private void markBuyOrSell() {
+        foundShops.setUseSellPrice(useSellPrice);
+        if (useSellPrice) {
+            buy.packedFGColour=0x800000;
+            sell.packedFGColour=0x00ff00;
+        } else {
+            buy.packedFGColour=0x00ff00;
+            sell.packedFGColour=0x800000;
+        }
     }
 }
