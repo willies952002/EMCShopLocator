@@ -1,7 +1,7 @@
 drop table if exists signs;
 create table signs (
 	server varchar(30),
-	resnumber varchar(30),
+	resnumber integer,
 	x integer,
 	y integer,
 	z integer,
@@ -9,6 +9,10 @@ create table signs (
 	buy integer,
 	sell integer,
 	owner varchar(30),
-	item varchar(60));
+	item varchar(60),
+	chooseposition integer,
+	lastseen bigint,
+	uploader varchar(30)
+);
 create index signs_i1 on signs (server, x, z, y);
 create index signs_i2 on signs (server, resnumber);
