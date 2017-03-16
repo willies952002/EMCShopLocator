@@ -30,7 +30,7 @@ public class ShopSign {
     static {
         line2Pattern=Pattern.compile("^\\d+$");
         line3Patternb=Pattern.compile("^B (\\d+K?)$");
-        line3Patterns=Pattern.compile("^(\\d+K?) S$");
+        line3Patterns=Pattern.compile("^(: *)?(\\d+K?) S$");
         // The spaces may be omitted. For example: "B14800:14200S" with M4sterMiners beacons.
         line3Patternbs=Pattern.compile("^B ?(\\d+K?) ?: ?(\\d+K?) ?S$");
     };
@@ -56,7 +56,7 @@ public class ShopSign {
                 } else {
                     m=line3Patterns.matcher(buySell);
                     if (m.matches()) {
-                        init(sign, serverName, -1, signval(m.group(1)));
+                        init(sign, serverName, -1, signval(m.group(2)));
                         return;
                     } else {
                         m=line3Patternbs.matcher(buySell);
@@ -69,6 +69,10 @@ public class ShopSign {
             }
         } catch (NumberFormatException ex) {
             throw new NotAShopSignException(sign, ex);
+        } catch (NullPointerException ex) {
+            // PeculiarPotato reported this. Probably signText[i] being null when the line is empty on some servers? 
+            // Do NOT reference sign here to prevent the constructor from throwing another NPE.
+            throw new NotAShopSignException("NPE when trying to read sign");
         }
         throw new NotAShopSignException(sign);        
     }

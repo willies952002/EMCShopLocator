@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
+import org.lwjgl.input.Keyboard;
 
 public class ShopSearchGui extends GuiScreen {
     
@@ -21,10 +22,13 @@ public class ShopSearchGui extends GuiScreen {
     private FoundShopsScrollList foundShops;
     private boolean inited=false;
     private boolean useSellPrice=false;
+    private int lastwidth=0, lastheight=0;
 
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=130;
     private final int xyzx1=170, xyzx2=200;
+    
+    private final int minwidth=480, minheight=360;
     
     // for map
     private static BlockPos newWaypointPos;
@@ -40,26 +44,36 @@ public class ShopSearchGui extends GuiScreen {
         drawDefaultBackground();
         super.drawScreen(mouseX, mouseY, partialTicks);
         drawCenteredString(fontRenderer, "Shop search - "+EMCShopLocator.instance.getSignCount()+" signs", width/2, 20, 0xffffff);
-        pattern.drawTextBox();
-        matchingStrings.drawScreen(mouseX, mouseY, partialTicks);
-        foundShops.drawScreen(mouseX, mouseY, partialTicks);
-        ShopSign sign;
+        if (this.width<minwidth || this.height<minheight) {
+            drawCenteredString(fontRenderer, "I am sorry ", width/2, 50, 0xff0000);
+            drawCenteredString(fontRenderer, "Your GUI scale is too big to", width/2, 80, 0xffffff);
+            drawCenteredString(fontRenderer, "safely display the shop search GUI.", width/2, 100, 0xffffff);
+            drawCenteredString(fontRenderer, "Please choose a smaller GUI scale in", width/2, 120, 0xffffff);
+            drawCenteredString(fontRenderer, "Video Settings and restart Minecraft.", width/2, 140, 0xffffff);
+            
+            drawCenteredString(fontRenderer, "Size="+this.width+"x"+this.height+", need at least "+minwidth+"x"+minheight+"", width/2, 180, 0xffff00);
+        } else {
+            pattern.drawTextBox();
+            matchingStrings.drawScreen(mouseX, mouseY, partialTicks);
+            foundShops.drawScreen(mouseX, mouseY, partialTicks);
+            ShopSign sign;
 
-        if ((sign=foundShops.getSelectedSign())!=null) {
-            mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemName(), this.width/2+2, this.height-150, 0xffffff);
-            if (sign.getBuyPrice()>0)
-                mc.fontRenderer.drawString("buy at "+sign.getBuyPrice()+ " ("+sign.getBuyPerItem()+" per item)", this.width/2+2, this.height-130, 0xffffff);
-            if (sign.getSellPrice()>0)
-                mc.fontRenderer.drawString("sell at "+sign.getSellPrice()+ " ("+sign.getSellPerItem()+" per item)", this.width/2+2, this.height-110, 0xffffff);
-            mc.fontRenderer.drawString("Server ", this.width/2+serverx1, this.height-80, 0xffffff);
-            mc.fontRenderer.drawString("§n"+sign.getServer(),  this.width/2+serverx2, this.height-80, 0x80c0ff);
-            mc.fontRenderer.drawString("Residence ", this.width/2+resx1, this.height-80, 0xffffff);
-            mc.fontRenderer.drawString("§n"+Integer.toString(sign.getRes()),  this.width/2+2+resx2, this.height-80, 0x80c0ff);
-            mc.fontRenderer.drawString("XYZ ", this.width/2+xyzx1, this.height-80, 0xffffff);
-            mc.fontRenderer.drawString("§n"+sign.getPos().getX()+"/"+sign.getPos().getY()+"/"+sign.getPos().getZ(),
-                        this.width/2+xyzx2, this.height-80, 0x80c0ff);
-            if (sign.getChoosePosition()!=-1)
-                mc.fontRenderer.drawString("Choose sign, position "+sign.getChoosePosition(), this.width/2+2, this.height-60, 0xffffff);
+            if ((sign=foundShops.getSelectedSign())!=null) {
+                mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemName(), this.width/2+2, this.height-150, 0xffffff);
+                if (sign.getBuyPrice()>0)
+                    mc.fontRenderer.drawString("buy at "+sign.getBuyPrice()+ " ("+sign.getBuyPerItem()+" per item)", this.width/2+2, this.height-130, 0xffffff);
+                if (sign.getSellPrice()>0)
+                    mc.fontRenderer.drawString("sell at "+sign.getSellPrice()+ " ("+sign.getSellPerItem()+" per item)", this.width/2+2, this.height-110, 0xffffff);
+                mc.fontRenderer.drawString("Server ", this.width/2+serverx1, this.height-80, 0xffffff);
+                mc.fontRenderer.drawString("§n"+sign.getServer(),  this.width/2+serverx2, this.height-80, 0x80c0ff);
+                mc.fontRenderer.drawString("Residence ", this.width/2+resx1, this.height-80, 0xffffff);
+                mc.fontRenderer.drawString("§n"+Integer.toString(sign.getRes()),  this.width/2+2+resx2, this.height-80, 0x80c0ff);
+                mc.fontRenderer.drawString("XYZ ", this.width/2+xyzx1, this.height-80, 0xffffff);
+                mc.fontRenderer.drawString("§n"+sign.getPos().getX()+"/"+sign.getPos().getY()+"/"+sign.getPos().getZ(),
+                            this.width/2+xyzx2, this.height-80, 0x80c0ff);
+                if (sign.getChoosePosition()!=-1)
+                    mc.fontRenderer.drawString("Choose sign, position "+sign.getChoosePosition(), this.width/2+2, this.height-60, 0xffffff);
+            }
         }
     }
     
@@ -95,21 +109,31 @@ public class ShopSearchGui extends GuiScreen {
     
     @Override
     public void initGui() {
-        if (!inited) {
+        if (!inited || lastwidth!=width || lastheight!=height) {
             // System.out.println("init shop search gui");
-            this.pattern=new GuiTextField(0, fontRenderer, 20, 45, this.width/2-40, 20);
-            this.pattern.setFocused(true);
-            this.matchingStrings=new MatchingItemScrollList(this, mc, this.width/2-40, this.height, 80, this.height-50, 20, 20);
-            this.foundShops=new FoundShopsScrollList(mc, this.width/2-40, this.height, 80, this.height-170, this.width/2+20, 20);
+            pattern=new GuiTextField(0, fontRenderer, 20, 45, width/2-40, 20);
+            pattern.setFocused(true);
+            matchingStrings=new MatchingItemScrollList(this, mc, width/2-40, height, 80, height-50, 20, 20);
+            foundShops=new FoundShopsScrollList(mc, width/2-40, height, 80, height-170, width/2+20, 20);
             newWaypointPos=null;
+            lastwidth=width; lastheight=height;
         }
         // Seems like the buttons get reset every time the GUI closes so we have to re-add them
-        buttonList.add(search=new GuiButton(0, 20, this.height-30, I18n.format("button.search")));
-        buttonList.add(close =new GuiButton(1, this.width-220, this.height-30, I18n.format("button.close")));
-        buttonList.add(buy   =new GuiButton(2, this.width/2+20, 45, 40, 20, I18n.format("button.buy")));
-        buttonList.add(sell  =new GuiButton(3, this.width-60, 45, 40, 20, I18n.format("button.sell")));
-        markBuyOrSell();
+        buttonList.add(close =new GuiButton(1, width-220, height-30, I18n.format("button.close")));
+        if (width>=minwidth && height>=minheight) {
+            buttonList.add(search=new GuiButton(0, 20, height-30, I18n.format("button.search")));
+            buttonList.add(buy   =new GuiButton(2, width/2+20, 45, 40, 20, I18n.format("button.buy")));
+            buttonList.add(sell  =new GuiButton(3, width-60, 45, 40, 20, I18n.format("button.sell")));
+            markBuyOrSell();
+        }
+
         inited=true;
+        Keyboard.enableRepeatEvents(true);
+    }
+    
+    @Override
+    public void onGuiClosed() {
+        Keyboard.enableRepeatEvents(false);
     }
     
     @Override

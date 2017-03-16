@@ -51,7 +51,9 @@ public class ChooseChestEventHandler {
             if (entity==null || !(entity instanceof TileEntitySign))
                 return;
             TileEntitySign sign=(TileEntitySign) entity;
-            if (sign.signText[3].getFormattedText().startsWith("[CHOOSE")) {
+            if (sign.signText!=null 
+            &&  sign.signText[3]!=null 
+            &&  sign.signText[3].getFormattedText().startsWith("[CHOOSE")) {
                 // System.out.println("Choose sign clicked");
                 lastChooseSignClickTime=System.currentTimeMillis();
                 lastChooseSignPos=pos;
