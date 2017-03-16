@@ -30,7 +30,7 @@ public class ShopSign {
     static {
         line2Pattern=Pattern.compile("^\\d+$");
         line3Patternb=Pattern.compile("^B (\\d+K?)$");
-        line3Patterns=Pattern.compile("^(: *)?(\\d+K?) S$");
+        line3Patterns=Pattern.compile("^ *(: *)?(\\d+K?) S$");
         // The spaces may be omitted. For example: "B14800:14200S" with M4sterMiners beacons.
         line3Patternbs=Pattern.compile("^B ?(\\d+K?) ?: ?(\\d+K?) ?S$");
     };
@@ -45,7 +45,12 @@ public class ShopSign {
     // Throws IllegalArgumentException if obviously not a shop sign.
 
     public ShopSign(TileEntitySign sign, String serverName) throws NotAShopSignException {
+        //boolean report=false;
         try {
+            if (sign.signText[3].getUnformattedText().contains("Blue Stclay")) {
+                //System.out.println("'"+sign.signText[2].getUnformattedText()+"'");
+                //report=true;
+            }
             if (line2Pattern.matcher(sign.signText[1].getUnformattedText()).matches()) {
                 Matcher m;
                 String buySell=sign.signText[2].getUnformattedText();
@@ -56,9 +61,13 @@ public class ShopSign {
                 } else {
                     m=line3Patterns.matcher(buySell);
                     if (m.matches()) {
+                        //if (report)
+                            // System.out.println("matches, group(2)="+m.group(2));
                         init(sign, serverName, -1, signval(m.group(2)));
                         return;
                     } else {
+                        //if (report)
+                            //System.out.println("sell didnt match");
                         m=line3Patternbs.matcher(buySell);
                         if (m.matches()) {
                             init(sign, serverName, signval(m.group(1)), signval(m.group(2)));
