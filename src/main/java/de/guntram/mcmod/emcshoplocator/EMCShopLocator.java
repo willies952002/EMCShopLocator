@@ -1,5 +1,6 @@
 package de.guntram.mcmod.emcshoplocator;
 
+import de.guntram.mcmod.emcshoplocator.config.ConfigurationHandler;
 import de.guntram.mcmod.emcshoplocator.events.ChooseChestEventHandler;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchGuiHandler;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyHandler;
@@ -32,19 +33,27 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
+import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-@Mod(modid = EMCShopLocator.MODID, version = EMCShopLocator.VERSION)
+@Mod(modid = EMCShopLocator.MODID, 
+        version = EMCShopLocator.VERSION,
+        clientSideOnly = true, 
+        acceptedMinecraftVersions = "[1.11.2]", 
+        guiFactory = "de.guntram.mcmod.emcshoplocator.config.SLGuiFactory"
+)
+
 public class EMCShopLocator
 {
     @Instance
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.2.1";
+    public static final String VERSION = "1.3.0";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -53,6 +62,8 @@ public class EMCShopLocator
     
     ArrayList<Chunk> delayedChunks;
     HashMap<String, ShopSign> signs;
+    HashMap<String, ShopSign> downloadedSigns;
+    private boolean connected;
     
     @EventHandler
     public void init(FMLInitializationEvent event)
@@ -78,11 +89,16 @@ public class EMCShopLocator
         
         serverNameInfoPattern=Pattern.compile("Empire Minecraft - ([^,]+),");
         lastSignUploadTime=lastSignSaveTime=System.currentTimeMillis();
+        if (ConfigurationHandler.isDownloadAllowed())
+            new SignDownloaderThread(this).start();
         serverName="unknown";
     }
 
     @EventHandler
     public void preInit(final FMLPreInitializationEvent event) {
+        ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
+        confHandler.load(event.getSuggestedConfigurationFile());
+        
         SignFile.setConfigFile(configFile=event.getSuggestedConfigurationFile());
         signs=SignFile.load();
     }
@@ -92,17 +108,28 @@ public class EMCShopLocator
     public void onConnectedToServerEvent(ClientConnectedToServerEvent event) {
         if (event.isLocal())
             return;
+        connected=true; // TODO: Check if it's really EMC
+        lastSignUploadTime=System.currentTimeMillis();
+        lastSignSaveTime=System.currentTimeMillis();
         // Don't do this if we already got a chat event that indicates the server.
         if (serverName.equals("unknown")) {
             if ((serverName=Minecraft.getMinecraft().getCurrentServerData().serverName)==null)
                 serverName="unknown";
         }
-        // signs=SignFile.load();
+    }
+    
+    @SideOnly(Side.CLIENT)
+    @SubscribeEvent
+    public void onDisconnectFromServerEvent(ClientDisconnectionFromServerEvent event) {
+        connected=false;
+        return;
     }
 
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=false)
     public void onChunkLoad(ChunkEvent.Load event) {
+        if (!connected)
+            return;
         Chunk chunk=event.getChunk();
         ExtendedBlockStorage[] store=chunk.getBlockStorageArray();
 	// When playing locally, store is filled right here, but
@@ -118,6 +145,8 @@ public class EMCShopLocator
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=true)
     public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (!connected)
+            return;
 
         // Don't count ticks, use real time. in case of client lag, or we don't
         // get some ticks when server/world porting.
@@ -125,7 +154,8 @@ public class EMCShopLocator
         // do this in another thread.
 
         long now=System.currentTimeMillis();
-        if (lastSignUploadTime + 5*60*1000 < now) {
+        if (ConfigurationHandler.isUploadAllowed() 
+        && lastSignUploadTime + 5*60*1000 < now) {
             // Set next time to a long time in the future; when the thread
             // finishes it should reset that time. But if the thread
             // crashes (shouldn't happen, finally {} ...) at least we will
@@ -169,6 +199,8 @@ public class EMCShopLocator
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=false)
     public void onClientChatEvent(ClientChatReceivedEvent event) {
+        if (!connected)
+            return;
         ITextComponent message = event.getMessage();
         Matcher matcher=serverNameInfoPattern.matcher(message.getUnformattedText());
         // System.out.println("try to find server name in "+message.getUnformattedText());
@@ -218,7 +250,6 @@ public class EMCShopLocator
                 // System.out.println("Not a shop sign "+ex.getMessage());
             }
         }
-        
         // @TODO: remove signs we have in our database that aren't in the chunk anymore
     }
     
@@ -242,5 +273,10 @@ public class EMCShopLocator
 
     void setSignUploadDone() {
         lastSignUploadTime = System.currentTimeMillis();
+    }
+
+    void downloadFinished(HashMap<String, ShopSign> result) {
+        for (ShopSign sign:result.values())
+            addSign(sign);
     }
 }

@@ -35,7 +35,7 @@ class SignFile {
             return null;
         }
     }
-    
+
     public static void save(HashMap<String, ShopSign> signs) throws IOException {
         File saveFile=signFile();
         BufferedWriter writer;
