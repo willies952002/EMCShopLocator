@@ -25,6 +25,7 @@ public class ShopSign {
     int choosePosition;         // only on CHOOSE signs. -1 otherwise as 0 is a perfectly acceptable position.
     long lastSeenTime;
     private boolean uploaded;
+    private boolean markedForDeletion;
     
     private static Pattern line2Pattern, line3Patternb, line3Patterns, line3Patternbs;
     static {
@@ -90,7 +91,9 @@ public class ShopSign {
         server=servername;
         pos=sign.getPos();
         shopOwner=sign.signText[0].getUnformattedText();
-        itemName=sign.signText[3].getUnformattedText().replace(':', '_');
+        // not anymore, separator changed to |
+        // itemName=sign.signText[3].getUnformattedText().replace(':', '_');
+        itemName=sign.signText[3].getUnformattedText();
         choosePosition=-1;       // will may reset in choose-constructor
         try {
             buyPrice=sellPrice=-1;
@@ -101,6 +104,7 @@ public class ShopSign {
             throw new NotAShopSignException(sign, e);
         }
         uploaded=false;
+        markedForDeletion=false;
         lastSeenTime=System.currentTimeMillis();
     }
 
@@ -114,11 +118,15 @@ public class ShopSign {
         this.itemName=it;
         // This is called when loading from a file, so don't reupload.
         this.uploaded=true;
+        markedForDeletion=false;
     }
     
     // this should correspond to toString see below
     static ShopSign fromString(String s) throws NotAShopSignStringException {
-        String[] parts = s.split(":");
+        String[] parts;
+        parts = s.split("\\|");
+        if (parts.length<5)
+            parts=s.split(":");         // old save file / download format
         if (parts.length<10)
             throw new NotAShopSignStringException("invalid number of columns: "+s);
         try {
@@ -129,14 +137,18 @@ public class ShopSign {
             int buy=Integer.parseInt(parts[5]);
             int sell=Integer.parseInt(parts[6]);
             ShopSign result=new ShopSign(parts[0], x, y, z, amount, buy, sell, parts[7], parts[8]);
-            // parts[10] is the res number and ignored here
+            // parts[9] is the res number and ignored here
             if (parts.length>=11)
                 result.choosePosition=Integer.parseInt(parts[10]);
             else
                 result.choosePosition=-1;           // old file format without choose positions
             if (parts.length>=12)       result.lastSeenTime=Long.parseLong(parts[11]);
-                
             result.uploaded=true;
+            result.markedForDeletion=false;
+            if (parts.length>=13 && !parts[12].isEmpty()) {
+                // System.out.println("markedForDeletion=true as parts[12] is '"+parts[12]+"'");
+                result.markedForDeletion=true;
+            }
             return result;
         } catch (NumberFormatException ex) {
             throw new NotAShopSignStringException(ex);
@@ -145,26 +157,26 @@ public class ShopSign {
 
     @Override
     public String toString() {
-        return server + ":" + 
-               pos.getX()+":"+pos.getY()+":"+pos.getZ()+":"+
-               amount + ":"+
-               buyPrice + ":" +
-               sellPrice + ":" +
-               shopOwner + ":" +
-               itemName + ":" +
-               ResPosition.getResAt(server, pos.getX(), pos.getZ()).resNumber + ":"+
-               choosePosition + ":" +
-               lastSeenTime;
+        return server + "|" + 
+               pos.getX()+"|"+pos.getY()+"|"+pos.getZ()+"|"+
+               amount + "|"+
+               buyPrice + "|" +
+               sellPrice + "|" +
+               shopOwner + "|" +
+               itemName + "|" +
+               ResPosition.getResAt(server, pos.getX(), pos.getZ()).resNumber + "|"+
+               choosePosition + "|" +
+               lastSeenTime + "|" + (markedForDeletion ? "todelete" : "");
     }
     
     public String getUniqueString() {
         try {
-            String result= server+":"+
-                    pos.getX()+":"+
-                    pos.getY()+":"+
+            String result= server+"|"+
+                    pos.getX()+"|"+
+                    pos.getY()+"|"+
                     pos.getZ();
             if (choosePosition!=-1)
-                result+=":"+choosePosition;
+                result+="|"+choosePosition;
             return result;
         } catch (NullPointerException ex) {
             System.err.println("in getUniqueString: ");
@@ -180,6 +192,7 @@ public class ShopSign {
     
     public boolean isUploaded() { return uploaded; }
     public void markUploaded() { uploaded=true; }
+    public void markNeedsUpload() { uploaded=false; }
     
     public boolean equals(ShopSign other) {
         if (other==null)
@@ -197,7 +210,9 @@ public class ShopSign {
     }
 
     private int signval(String s) {
-        if (s.endsWith("K")) {
+        if (s.endsWith("M")) {
+            return Integer.parseInt(s.substring(0, s.length()-1))*1000000;
+        } else if (s.endsWith("K")) {
             return Integer.parseInt(s.substring(0, s.length()-1))*1000;
         } else {
             return Integer.parseInt(s);
@@ -215,4 +230,6 @@ public class ShopSign {
     public int getSellPrice() { return sellPrice; }
     public BlockPos getPos() { return pos; }
     public int getChoosePosition() { return choosePosition; }
+    public void markForDeletion() { markedForDeletion=true; }
+    public boolean markedForDeletion() { return markedForDeletion; }
 }

@@ -6,6 +6,8 @@ import de.guntram.mcmod.emcshoplocator.gui.ShopSearchGuiHandler;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyHandler;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchKeyRegistration;
 import java.io.File;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -33,12 +35,12 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientConnectedToServerEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent.ClientDisconnectionFromServerEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.apache.commons.codec.binary.Hex;
 
 @Mod(modid = EMCShopLocator.MODID, 
         version = EMCShopLocator.VERSION,
@@ -63,7 +65,7 @@ public class EMCShopLocator
     ArrayList<Chunk> delayedChunks;
     HashMap<String, ShopSign> signs;
     HashMap<String, ShopSign> downloadedSigns;
-    private boolean connected;
+    private boolean connectedToEMC;
     
     @EventHandler
     public void init(FMLInitializationEvent event)
@@ -98,6 +100,7 @@ public class EMCShopLocator
     public void preInit(final FMLPreInitializationEvent event) {
         ConfigurationHandler confHandler = ConfigurationHandler.getInstance();
         confHandler.load(event.getSuggestedConfigurationFile());
+        MinecraftForge.EVENT_BUS.register(confHandler);
         
         SignFile.setConfigFile(configFile=event.getSuggestedConfigurationFile());
         signs=SignFile.load();
@@ -108,27 +111,44 @@ public class EMCShopLocator
     public void onConnectedToServerEvent(ClientConnectedToServerEvent event) {
         if (event.isLocal())
             return;
-        connected=true; // TODO: Check if it's really EMC
+        String ServerIcon=Minecraft.getMinecraft().getCurrentServerData().getBase64EncodedIconData();
+        MessageDigest md;
+        String digest="";
+        try {
+            md = MessageDigest.getInstance("SHA1");
+            digest=Hex.encodeHexString(md.digest(ServerIcon.getBytes()));
+            connectedToEMC=digest.equals("56b89ba7fb0a24e889e0e0af30041d7f94c7a0e7");
+        } catch (NoSuchAlgorithmException ex) {
+            connectedToEMC=false;
+        }
+        
+        if (connectedToEMC)
+            System.out.println("Connected to EMC");
+        else
+            System.out.println("Connected, this is not EMC though (server id is "+digest+")");
+        
         lastSignUploadTime=System.currentTimeMillis();
         lastSignSaveTime=System.currentTimeMillis();
-        // Don't do this if we already got a chat event that indicates the server.
-        if (serverName.equals("unknown")) {
-            if ((serverName=Minecraft.getMinecraft().getCurrentServerData().serverName)==null)
-                serverName="unknown";
-        }
     }
     
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public void onDisconnectFromServerEvent(ClientDisconnectionFromServerEvent event) {
-        connected=false;
-        return;
+        if (connectedToEMC) {
+            if (ConfigurationHandler.isUploadAllowed()) {
+                new SignUploaderThread(signs, this).start();
+            }
+            new SignSaverThread(signs, this).start();
+        }
+        connectedToEMC=false;
+        serverName="unknown";
+        delayedChunks.clear();
     }
 
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=false)
     public void onChunkLoad(ChunkEvent.Load event) {
-        if (!connected)
+        if (!connectedToEMC)
             return;
         Chunk chunk=event.getChunk();
         ExtendedBlockStorage[] store=chunk.getBlockStorageArray();
@@ -145,17 +165,17 @@ public class EMCShopLocator
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=true)
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (!connected)
+        if (!connectedToEMC || !ResPosition.isKnownEMCServer(serverName))
             return;
 
-        // Don't count ticks, use real time. in case of client lag, or we don't
-        // get some ticks when server/world porting.
+        // Don't count ticks, use real time. in case of client lag, or if we
+        // don't get some ticks when server/world porting.
         // But we don't want the client to delay while waiting for the disk so
         // do this in another thread.
 
         long now=System.currentTimeMillis();
         if (ConfigurationHandler.isUploadAllowed() 
-        && lastSignUploadTime + 5*60*1000 < now) {
+        && lastSignUploadTime + ConfigurationHandler.getUploadInterval()*60*1000 < now) {
             // Set next time to a long time in the future; when the thread
             // finishes it should reset that time. But if the thread
             // crashes (shouldn't happen, finally {} ...) at least we will
@@ -165,7 +185,7 @@ public class EMCShopLocator
             new SignUploaderThread(signs, this).start();
         }
 
-        if (lastSignSaveTime + 5*60*1000 < now) {
+        if (lastSignSaveTime + ConfigurationHandler.getSaveInterval()*60*1000 < now) {
             lastSignSaveTime = now+60*60*1000;
             System.out.println("saving sign data");
             new SignSaverThread(signs, this).start();
@@ -175,13 +195,13 @@ public class EMCShopLocator
         // once we've processed them so this shouldn't lag the client too much.
         if (delayedChunks==null)
             return;
-        ArrayList<Chunk> toRemove=new ArrayList<Chunk>();
+        ArrayList<Chunk> processedChunks=new ArrayList<Chunk>();
         for (Chunk chunk:delayedChunks) {
             ExtendedBlockStorage[] store=chunk.getBlockStorageArray();
             if (store.length!=0 || store[0]!=null) {
                 try {
                     findShopSigns(chunk, store);
-                    toRemove.add(chunk);
+                    processedChunks.add(chunk);
                 } catch (ConcurrentModificationException ex) {
                     // Sometimes MC is still loading entity data in the
                     // while the chunk store is alreads filled. In this
@@ -191,7 +211,7 @@ public class EMCShopLocator
                 }
             }
         }
-        for (Chunk chunk:toRemove) {
+        for (Chunk chunk:processedChunks) {
             delayedChunks.remove(chunk);
         }
     }
@@ -199,7 +219,7 @@ public class EMCShopLocator
     @SideOnly(Side.CLIENT)
     @SubscribeEvent(priority=EventPriority.NORMAL, receiveCanceled=false)
     public void onClientChatEvent(ClientChatReceivedEvent event) {
-        if (!connected)
+        if (!connectedToEMC)
             return;
         ITextComponent message = event.getMessage();
         Matcher matcher=serverNameInfoPattern.matcher(message.getUnformattedText());
@@ -235,6 +255,19 @@ public class EMCShopLocator
                 }
             }
         }
+
+        long now=System.currentTimeMillis();
+        for (ShopSign shopsign:signs.values()) {
+            if (shopsign.pos.getX() >= (chunk.xPosition<<4)
+            &&  shopsign.pos.getX() <= (chunk.xPosition<<4)+15
+            &&  shopsign.pos.getZ() >= (chunk.zPosition<<4)
+            &&  shopsign.pos.getZ() <= (chunk.zPosition<<4)+15
+            &&  shopsign.choosePosition==-1
+            &&  shopsign.server.equals(serverName)) {
+                shopsign.markForDeletion();
+            }
+        }
+        // System.out.println("marking for deletion took "+(System.currentTimeMillis()-now)+ "ms");
         
         Map<BlockPos, TileEntity> tiles=chunk.getTileEntityMap();
         for (BlockPos pos: tiles.keySet()) {
@@ -244,19 +277,17 @@ public class EMCShopLocator
             TileEntitySign sign=(TileEntitySign) entity;
             // System.out.println("found sign at "+pos+" second row is '"+sign.signText[1].getUnformattedText()+"' and third is '"+sign.signText[2].getUnformattedText()+"'");
             try {
-                ShopSign shopsign=new ShopSign(sign, serverName);
+                ShopSign shopsign = new ShopSign(sign, serverName);
                 addSign(shopsign);
             } catch (NotAShopSignException ex) {
                 // System.out.println("Not a shop sign "+ex.getMessage());
             }
         }
-        // @TODO: remove signs we have in our database that aren't in the chunk anymore
     }
     
     public void addSign(ShopSign shopsign) {
-        if (shopsign!=null && !shopsign.equals(signs.get(shopsign.getUniqueString()))) {
+        if (shopsign!=null)
             signs.put(shopsign.getUniqueString(), shopsign);
-        }
     }
     
     public Collection<ShopSign> getSigns() {
@@ -276,7 +307,28 @@ public class EMCShopLocator
     }
 
     void downloadFinished(HashMap<String, ShopSign> result) {
-        for (ShopSign sign:result.values())
-            addSign(sign);
+        for (ShopSign sign:result.values()) {
+            String ustr=sign.getUniqueString();
+            ShopSign savedSign = signs.get(ustr);
+            if (savedSign==null || savedSign.lastSeenTime < sign.lastSeenTime) {
+                if (sign.markedForDeletion())
+                    signs.remove(ustr);
+                else
+                    addSign(sign);
+            } else if (!savedSign.markedForDeletion()) {
+                savedSign.markNeedsUpload();
+            }
+        }
+    }
+    
+    public void uploadAll() {
+        for (ShopSign sign:signs.values()) {
+            sign.markNeedsUpload();
+        }
+        new SignUploaderThread(signs, this).start();
+    }
+    
+    public static boolean isDeveloperDebugVersion() {
+        return Minecraft.getMinecraft().getSession().getUsername().equals("Giselbaer");
     }
 }

@@ -1,7 +1,9 @@
 package de.guntram.mcmod.emcshoplocator.XaeroMiniMap;
 
+import de.guntram.mcmod.emcshoplocator.EMCShopLocator;
 import de.guntram.mcmod.emcshoplocator.gui.ShopSearchGui;
 import java.io.IOException;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -39,6 +41,10 @@ public class ShopWaypointMaker {
         if ((pos=ShopSearchGui.getJourneyMapNewWaypointPos())!=null) {
             IXaeroMinimap xaero;
             xaero=XaeroMinimap.instance;
+            if (EMCShopLocator.isDeveloperDebugVersion()) {
+                // Just for testing. Do not allow players to do this.
+                xaero.getSettings().resetServerSettings();
+            }
             // System.out.println("trying to add WP, instance="+xaero);
             Minimap minimap = xaero.getInterfaces().getMinimap();
             final Waypoint created = new Waypoint(pos.getX(), pos.getY(), pos.getZ(),

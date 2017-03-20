@@ -144,10 +144,22 @@ public class ShopSearchGui extends GuiScreen {
         } else if (button==search) {
             HashSet<String> items=new HashSet<String>();
             String searchText=pattern.getText();
+            if (searchText.charAt(0) == '#' && EMCShopLocator.isDeveloperDebugVersion()) {
+                if (searchText.equals("#uploadall")) {
+                    System.out.println("Starting upload");
+                    EMCShopLocator.instance.uploadAll();
+                }
+                else if (searchText.equals("#signinfo")) {
+                    System.out.println(EMCShopLocator.instance.getSignCount()+" signs");
+                    System.out.println(EMCShopLocator.instance.getSigns().size()+" sign values");
+                }
+            }
             Pattern regex=Pattern.compile(searchText, Pattern.CASE_INSENSITIVE);
             for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
+                if (sign.markedForDeletion())
+                    continue;
                 String itemName=sign.getItemName();
-                if (regex.matcher(itemName).find())
+                if (itemName!=null && regex.matcher(itemName).find())
                     items.add(itemName);
             }
             matchingStrings.setItems(items.toArray(new String[items.size()]));
@@ -173,7 +185,7 @@ public class ShopSearchGui extends GuiScreen {
         ArrayList<ShopSign> foundSigns=new ArrayList<ShopSign>();
         for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
             String itemName=sign.getItemName();
-            if (itemName.equals(item))
+            if (itemName!=null && itemName.equals(item))
                 foundSigns.add(sign);
         }
         foundShops.setSigns(foundSigns.toArray(new ShopSign[foundSigns.size()]));

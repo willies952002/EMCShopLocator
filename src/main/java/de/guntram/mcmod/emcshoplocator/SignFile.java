@@ -23,7 +23,10 @@ class SignFile {
             while ((s=reader.readLine())!=null) {
                 try {
                     ShopSign newSign=ShopSign.fromString(s);
-                    result.put(newSign.getUniqueString(), newSign);
+                    if (newSign.markedForDeletion())
+                        result.remove(newSign.getUniqueString());
+                    else
+                        result.put(newSign.getUniqueString(), newSign);
                 } catch (NotAShopSignStringException ex) {
                     System.err.println(ex.getMessage());
                 }
@@ -39,13 +42,17 @@ class SignFile {
     public static void save(HashMap<String, ShopSign> signs) throws IOException {
         File saveFile=signFile();
         BufferedWriter writer;
+        int markedForDeletion=0;
         writer=new BufferedWriter(new FileWriter(saveFile));
         for (ShopSign sign: signs.values()) {
+            if (sign.markedForDeletion()) {
+                markedForDeletion++;
+            }
             writer.write(sign.toString());
             writer.write('\n');
         }
         writer.close();
-        System.out.println(Integer.toString(signs.size())+" signs saved");
+        System.out.println(Integer.toString(signs.size())+" signs saved, "+markedForDeletion+" marked invalid");
     }
     
     public static void setConfigFile(File configFile) {

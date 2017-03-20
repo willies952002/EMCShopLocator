@@ -16,10 +16,15 @@ public class ResPosition {
         resNumber=n;
     }
     
+    static boolean isKnownEMCServer(String server) {
+        return ResInit.positions.get(server.toLowerCase())!=null;
+    }
+    
     static ResPosition getResAt(String server, int x, int z) {
         ResPosition[] list=ResInit.positions.get(server.toLowerCase());
         if (list==null || list.length==0) {
-            System.err.println("no positions for "+server);
+            // This happens whenever not connected to EMC, so don't spam
+            // System.err.println("no positions for "+server);
             return nullResPosition;
         }
         // System.out.println("search for x="+x+", z="+z+" on "+server);

@@ -37,6 +37,8 @@ public class SignUploaderThread  extends Thread {
             conn.setRequestMethod("POST");
             StringBuilder upload =new StringBuilder();
             upload.append("name=").append(Minecraft.getMinecraft().getSession().getUsername());
+            upload.append("&client=").append(EMCShopLocator.MODID);
+            upload.append("&clientversion=").append(EMCShopLocator.VERSION);
             upload.append("&upload=");
             for (ShopSign sign: toSave.values()) {
                 if (!sign.isUploaded())
