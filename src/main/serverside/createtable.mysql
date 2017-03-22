@@ -12,7 +12,8 @@ create table signs (
 	item varchar(60),
 	chooseposition integer,
 	lastseen bigint,
-	uploader varchar(30)
+	uploader varchar(30),
+	todelete boolean
 );
-create index signs_i1 on signs (server, x, z, y);
+create index signs_i1 on signs (server, x, z, y, chooseposition);
 create index signs_i2 on signs (server, resnumber);
