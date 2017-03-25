@@ -55,7 +55,7 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.3.0";
+    public static final String VERSION = "1.3.1";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -310,7 +310,7 @@ public class EMCShopLocator
         for (ShopSign sign:result.values()) {
             String ustr=sign.getUniqueString();
             ShopSign savedSign = signs.get(ustr);
-            if (savedSign==null || savedSign.lastSeenTime < sign.lastSeenTime) {
+            if (savedSign==null || savedSign.lastSeenTime <= sign.lastSeenTime) {
                 if (sign.markedForDeletion())
                     signs.remove(ustr);
                 else

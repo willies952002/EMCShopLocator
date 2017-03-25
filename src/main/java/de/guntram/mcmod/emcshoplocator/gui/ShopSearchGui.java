@@ -144,7 +144,7 @@ public class ShopSearchGui extends GuiScreen {
         } else if (button==search) {
             HashSet<String> items=new HashSet<String>();
             String searchText=pattern.getText();
-            if (searchText.charAt(0) == '#' && EMCShopLocator.isDeveloperDebugVersion()) {
+            if (searchText.length()>0 && searchText.charAt(0) == '#' && EMCShopLocator.isDeveloperDebugVersion()) {
                 if (searchText.equals("#uploadall")) {
                     System.out.println("Starting upload");
                     EMCShopLocator.instance.uploadAll();
