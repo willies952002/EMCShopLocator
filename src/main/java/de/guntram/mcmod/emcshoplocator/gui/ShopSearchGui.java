@@ -17,7 +17,7 @@ import org.lwjgl.input.Keyboard;
 public class ShopSearchGui extends GuiScreen {
     
     private GuiButton search, close, buy, sell;
-    private GuiTextField pattern;
+    private GuiTextField pattern, minAmount;
     private MatchingItemScrollList matchingStrings;
     private FoundShopsScrollList foundShops;
     private boolean inited=false;
@@ -54,6 +54,7 @@ public class ShopSearchGui extends GuiScreen {
             drawCenteredString(fontRenderer, "Size="+this.width+"x"+this.height+", need at least "+minwidth+"x"+minheight+"", width/2, 180, 0xffff00);
         } else {
             pattern.drawTextBox();
+            minAmount.drawTextBox();
             matchingStrings.drawScreen(mouseX, mouseY, partialTicks);
             foundShops.drawScreen(mouseX, mouseY, partialTicks);
             ShopSign sign;
@@ -93,8 +94,12 @@ public class ShopSearchGui extends GuiScreen {
                     shopName=sign.getItemName();
                 }
             }
+//        } else if (minAmount.) {
+            
         } else {
             super.mouseClicked(mouseX, mouseY, mouseButton);
+            pattern.mouseClicked(mouseX, mouseY, mouseButton);
+            minAmount.mouseClicked(mouseX, mouseY, mouseButton);
         }
     }
         
@@ -111,8 +116,11 @@ public class ShopSearchGui extends GuiScreen {
     public void initGui() {
         if (!inited || lastwidth!=width || lastheight!=height) {
             // System.out.println("init shop search gui");
-            pattern=new GuiTextField(0, fontRenderer, 20, 45, width/2-40, 20);
+            pattern=new GuiTextField(0, fontRenderer, 20, 45, width/2-40-70, 20);
             pattern.setFocused(true);
+            minAmount=new GuiTextField(1, fontRenderer, width/2-40-20, 45, 40, 20);
+            minAmount.setText(I18n.format("textboxhelp.amount"));
+            minAmount.setTextColor(0x808080);
             matchingStrings=new MatchingItemScrollList(this, mc, width/2-40, height, 80, height-50, 20, 20);
             foundShops=new FoundShopsScrollList(mc, width/2-40, height, 80, height-170, width/2+20, 20);
             newWaypointPos=null;
@@ -155,8 +163,14 @@ public class ShopSearchGui extends GuiScreen {
                 }
             }
             Pattern regex=Pattern.compile(searchText, Pattern.CASE_INSENSITIVE);
+            int minitems;
+            try {
+                minitems=Integer.parseInt(minAmount.getText());
+            } catch (Exception ex) {
+                minitems=1;
+            }
             for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
-                if (sign.markedForDeletion())
+                if (sign.markedForDeletion() || sign.getAmount()<minitems)
                     continue;
                 String itemName=sign.getItemName();
                 if (itemName!=null && regex.matcher(itemName).find())
@@ -179,11 +193,26 @@ public class ShopSearchGui extends GuiScreen {
             actionPerformed(search);
         else if (pattern.isFocused())
             pattern.textboxKeyTyped(c, i);
+        else if (minAmount.isFocused() && (c>='0' && c<='9' || c<32)) {
+            String current=minAmount.getText();
+            if (current.length()>0 && !Character.isDigit(current.charAt(0)))
+                minAmount.setText("");
+            minAmount.textboxKeyTyped(c, i);
+            minAmount.setTextColor(0xffffff);
+        }
     }
     
     public void itemChosen(String item) {
         ArrayList<ShopSign> foundSigns=new ArrayList<ShopSign>();
+        int minitems;
+        try {
+            minitems=Integer.parseInt(minAmount.getText());
+        } catch (Exception ex) {
+            minitems=1;
+        }
         for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
+            if (sign.markedForDeletion() || sign.getAmount()<minitems)
+                continue;
             String itemName=sign.getItemName();
             if (itemName!=null && itemName.equals(item))
                 foundSigns.add(sign);

@@ -55,7 +55,7 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.4.0";
+    public static final String VERSION = "1.5.0";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -268,9 +268,17 @@ public class EMCShopLocator
             &&  shopsign.pos.getX() <= (chunk.xPosition<<4)+15
             &&  shopsign.pos.getZ() >= (chunk.zPosition<<4)
             &&  shopsign.pos.getZ() <= (chunk.zPosition<<4)+15
-            &&  shopsign.choosePosition==-1
             &&  shopsign.server.equals(serverName)) {
-                shopsign.markForDeletion();
+                if (shopsign.choosePosition==-1)
+                    shopsign.markForDeletion(); // it will be replaced anyway
+                else {
+                    TileEntity entity = chunk.getTileEntity(shopsign.pos, Chunk.EnumCreateEntityType.IMMEDIATE);
+                    if (entity==null
+                    ||  !(entity instanceof TileEntitySign)
+                    ||  !((TileEntitySign) entity).signText[3].getUnformattedText().startsWith("[CHOOSE")) {
+                        shopsign.markForDeletion();
+                    }
+                }
             }
         }
         // System.out.println("marking for deletion took "+(System.currentTimeMillis()-now)+ "ms");
