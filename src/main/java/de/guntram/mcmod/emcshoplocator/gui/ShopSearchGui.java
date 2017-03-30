@@ -2,6 +2,7 @@ package de.guntram.mcmod.emcshoplocator.gui;
 
 import de.guntram.mcmod.emcshoplocator.EMCShopLocator;
 import de.guntram.mcmod.emcshoplocator.ShopSign;
+import de.guntram.mcmod.emcshoplocator.config.ConfigurationHandler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,12 +18,15 @@ import org.lwjgl.input.Keyboard;
 public class ShopSearchGui extends GuiScreen {
     
     private GuiButton search, close, buy, sell;
+    private GuiButton serverEnabled[];
+    private final int serverButtonOffset=100;
     private GuiTextField pattern, minAmount;
     private MatchingItemScrollList matchingStrings;
     private FoundShopsScrollList foundShops;
     private boolean inited=false;
     private boolean useSellPrice=false;
     private int lastwidth=0, lastheight=0;
+    private String lastChosenItem;              // for rebuilding the sign list when server enabled buttons change
 
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=130;
@@ -123,6 +127,7 @@ public class ShopSearchGui extends GuiScreen {
             minAmount.setTextColor(0x808080);
             matchingStrings=new MatchingItemScrollList(this, mc, width/2-40, height, 80, height-50, 20, 20);
             foundShops=new FoundShopsScrollList(mc, width/2-40, height, 80, height-170, width/2+20, 20);
+            serverEnabled=new GuiButton[ConfigurationHandler.getNumberOfServers()];
             newWaypointPos=null;
             lastwidth=width; lastheight=height;
         }
@@ -133,6 +138,13 @@ public class ShopSearchGui extends GuiScreen {
             buttonList.add(buy   =new GuiButton(2, width/2+20, 45, 40, 20, I18n.format("button.buy")));
             buttonList.add(sell  =new GuiButton(3, width-60, 45, 40, 20, I18n.format("button.sell")));
             markBuyOrSell();
+        }
+        
+        for (int i=0; i<ConfigurationHandler.getNumberOfServers(); i++) {
+            GuiButton newButton=new GuiButton(i+serverButtonOffset, width/2-20, 80+i*20, 40, 20, ConfigurationHandler.getServerName(i));
+            serverEnabled[i]=newButton;
+            buttonList.add(newButton);
+            newButton.packedFGColour=(ConfigurationHandler.isServerEnabled(i) ? 0x00ff00 : 0x800000);
         }
 
         inited=true;
@@ -146,6 +158,18 @@ public class ShopSearchGui extends GuiScreen {
     
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
+
+        // handle enable/disable server first, and search again in this case
+        int buttonID=button.id;
+        if (buttonID>=serverButtonOffset && buttonID<serverButtonOffset+ConfigurationHandler.getNumberOfServers()) {
+            boolean newState=!ConfigurationHandler.isServerEnabled(buttonID-serverButtonOffset);
+            ConfigurationHandler.setServerEnabled(buttonID-serverButtonOffset, newState);
+            button.packedFGColour=(newState ? 0x00ff00 : 0x800000);
+            button=search;
+            if (lastChosenItem != null)
+                itemChosen(lastChosenItem);
+        }
+
         if (button==close) {
             mc.displayGuiScreen(null);
             mc.setIngameFocus();
@@ -173,7 +197,8 @@ public class ShopSearchGui extends GuiScreen {
                 if (sign.markedForDeletion() || sign.getAmount()<minitems)
                     continue;
                 String itemName=sign.getItemName();
-                if (itemName!=null && regex.matcher(itemName).find())
+                if (itemName!=null && regex.matcher(itemName).find() 
+                && ConfigurationHandler.isServerEnabled(sign.getServerIndex()))
                     items.add(itemName);
             }
             matchingStrings.setItems(items.toArray(new String[items.size()]));
@@ -214,10 +239,12 @@ public class ShopSearchGui extends GuiScreen {
             if (sign.markedForDeletion() || sign.getAmount()<minitems)
                 continue;
             String itemName=sign.getItemName();
-            if (itemName!=null && itemName.equals(item))
+            if (itemName!=null && itemName.equals(item)
+            && ConfigurationHandler.isServerEnabled(sign.getServerIndex()))
                 foundSigns.add(sign);
         }
         foundShops.setSigns(foundSigns.toArray(new ShopSign[foundSigns.size()]));
+        lastChosenItem=item;
     }
     
     public static BlockPos getJourneyMapNewWaypointPos() {

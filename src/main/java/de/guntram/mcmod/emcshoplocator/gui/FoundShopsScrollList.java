@@ -47,9 +47,9 @@ public class FoundShopsScrollList extends GuiScrollingList {
                     double result=getChosenPricePerItem(a) - getChosenPricePerItem(b);
                     if (useSellPrice)       // when selling, highest price top
                         result=-result;
-                    if (result < -0.01)
+                    if (result < -0.0001)
                         return -1;
-                    else if (result > 0.01)
+                    else if (result > 0.0001)
                         return 1;
                     else
                         return 0;

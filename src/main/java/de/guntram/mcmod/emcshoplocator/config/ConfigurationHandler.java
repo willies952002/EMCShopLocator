@@ -10,7 +10,7 @@ import net.minecraftforge.common.config.Configuration;
 public class ConfigurationHandler {
 
     private static ConfigurationHandler instance;
-    
+
     private Configuration config;
     private String configFileName;
     
@@ -18,6 +18,8 @@ public class ConfigurationHandler {
     private boolean allowUpload=true;
     private int saveEveryXMinutes=1;
     private int uploadEveryXMinutes=5;
+    private boolean serverEnabled[];
+    private static final int numberOfServers=10;       // utopia=0, smp1..9
     
     public static ConfigurationHandler getInstance() {
         if (instance==null)
@@ -44,10 +46,14 @@ public class ConfigurationHandler {
     }
     
     private void loadConfig() {
-        allowUpload=config.getBoolean("Allow Upload", Configuration.CATEGORY_CLIENT, allowUpload, "Allow Upload to central database");
-        allowDownload=config.getBoolean("Allow Download", Configuration.CATEGORY_CLIENT, allowDownload, "Allow Download from central database (only if Upload is enabled as well)");
+        serverEnabled=new boolean[numberOfServers];
+        allowUpload=config.getBoolean("Allow Upload", Configuration.CATEGORY_CLIENT, true, "Allow Upload to central database");
+        allowDownload=config.getBoolean("Allow Download", Configuration.CATEGORY_CLIENT, false, "Allow Download from central database (only if Upload is enabled as well)");
         saveEveryXMinutes=config.getInt("Save every X minutes", Configuration.CATEGORY_CLIENT, 1, 1, 60, "How often sign data will be saved locally");
         uploadEveryXMinutes=config.getInt("Upload every X minutes", Configuration.CATEGORY_CLIENT, 5, 5, 60, "How often sign data will be uploaded");
+        for (int i=0; i<numberOfServers; i++) {
+            serverEnabled[i]=config.getBoolean("Enable Server "+getServerName(i), Configuration.CATEGORY_CLIENT, true, "Search for shops on this server");
+        }
         if (config.hasChanged())
             config.save();
     }
@@ -74,5 +80,32 @@ public class ConfigurationHandler {
     
     public static int getUploadInterval() {
         return getInstance().uploadEveryXMinutes;
+    }
+
+    public static int getNumberOfServers() {
+        return numberOfServers;
+    }
+    
+    public static boolean isServerEnabled(int i) {
+        return i<numberOfServers && getInstance().serverEnabled[i];
+    }
+    
+    public static void setServerEnabled(int i, boolean val) {
+        getInstance().serverEnabled[i]=val;
+        // Todo: how do I save this into config? There's no setter methods?
+    }
+    
+    public static String getServerName(int i) {
+        if (i==0)
+            return "UTOPIA";
+        else
+            return "SMP"+i;
+    }
+
+    public static int getServerIndex(String server) {
+        if (server.startsWith("SMP"))
+            return server.charAt(3)-'0';
+        else
+            return 0;
     }
 }

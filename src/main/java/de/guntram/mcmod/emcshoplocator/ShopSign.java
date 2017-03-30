@@ -5,6 +5,7 @@
  */
 package de.guntram.mcmod.emcshoplocator;
 
+import de.guntram.mcmod.emcshoplocator.config.ConfigurationHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.tileentity.TileEntitySign;
@@ -232,4 +233,7 @@ public class ShopSign {
     public int getChoosePosition() { return choosePosition; }
     public void markForDeletion() { markedForDeletion=true; }
     public boolean markedForDeletion() { return markedForDeletion; }
+    public int getServerIndex() {
+        return ConfigurationHandler.getServerIndex(server);
+    }
 }
