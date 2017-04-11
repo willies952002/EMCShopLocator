@@ -48,7 +48,7 @@ public class ConfigurationHandler {
     private void loadConfig() {
         serverEnabled=new boolean[numberOfServers];
         allowUpload=config.getBoolean("Allow Upload", Configuration.CATEGORY_CLIENT, true, "Allow Upload to central database");
-        allowDownload=config.getBoolean("Allow Download", Configuration.CATEGORY_CLIENT, false, "Allow Download from central database (only if Upload is enabled as well)");
+        allowDownload=config.getBoolean("Allow Download", Configuration.CATEGORY_CLIENT, true, "Allow Download from central database (only if Upload is enabled as well)");
         saveEveryXMinutes=config.getInt("Save every X minutes", Configuration.CATEGORY_CLIENT, 1, 1, 60, "How often sign data will be saved locally");
         uploadEveryXMinutes=config.getInt("Upload every X minutes", Configuration.CATEGORY_CLIENT, 5, 5, 60, "How often sign data will be uploaded");
         for (int i=0; i<numberOfServers; i++) {
