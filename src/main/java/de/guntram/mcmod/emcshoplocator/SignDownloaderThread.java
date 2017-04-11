@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
+import net.minecraft.client.Minecraft;
 
 /**
  *
@@ -27,7 +28,9 @@ public class SignDownloaderThread extends Thread {
         try {
             String s;
             URL download=new URL("http://minecraft.guntram.de/emcmarket/download.pl?"+
-                    "client="+EMCShopLocator.MODID+"&clientversion="+EMCShopLocator.VERSION);
+                    "client="+EMCShopLocator.MODID+
+                    "&clientversion="+EMCShopLocator.VERSION+
+                    "&name="+Minecraft.getMinecraft().getSession().getUsername());
             reader=new BufferedReader(new InputStreamReader(download.openStream()));
             while ((s=reader.readLine())!=null) {
                 try {
