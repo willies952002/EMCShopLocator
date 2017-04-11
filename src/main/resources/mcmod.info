@@ -5,7 +5,7 @@
   "description": "Locate shop signs on Empire Minecraft, and keep a database of them",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
+  "url": "https://mods.curse.com/mc-mods/minecraft/262417-emc-shop-locator",
   "updateUrl": "",
   "authorList": ["Giselbaer"],
   "credits": "",
