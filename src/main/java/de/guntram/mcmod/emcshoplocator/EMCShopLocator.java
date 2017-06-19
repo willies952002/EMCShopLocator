@@ -45,7 +45,7 @@ import org.apache.commons.codec.binary.Hex;
 @Mod(modid = EMCShopLocator.MODID, 
         version = EMCShopLocator.VERSION,
         clientSideOnly = true, 
-        acceptedMinecraftVersions = "[1.11.2]", 
+        acceptedMinecraftVersions = "[1.12]", 
         guiFactory = "de.guntram.mcmod.emcshoplocator.config.SLGuiFactory"
 )
 
@@ -264,10 +264,10 @@ public class EMCShopLocator
 
         long now=System.currentTimeMillis();
         for (ShopSign shopsign:signs.values()) {
-            if (shopsign.pos.getX() >= (chunk.xPosition<<4)
-            &&  shopsign.pos.getX() <= (chunk.xPosition<<4)+15
-            &&  shopsign.pos.getZ() >= (chunk.zPosition<<4)
-            &&  shopsign.pos.getZ() <= (chunk.zPosition<<4)+15
+            if (shopsign.pos.getX() >= (chunk.x<<4)
+            &&  shopsign.pos.getX() <= (chunk.x<<4)+15
+            &&  shopsign.pos.getZ() >= (chunk.z<<4)
+            &&  shopsign.pos.getZ() <= (chunk.z<<4)+15
             &&  shopsign.server.equals(serverName)) {
                 if (shopsign.choosePosition==-1)
                     shopsign.markForDeletion(); // it will be replaced anyway
