@@ -55,7 +55,7 @@ public class EMCShopLocator
     public static EMCShopLocator instance;
     
     public static final String MODID = "emcshoplocator";
-    public static final String VERSION = "1.5.0";
+    public static final String VERSION = "1.5.1";
     private Pattern serverNameInfoPattern;
     private long lastSignUploadTime;
     private long lastSignSaveTime;
@@ -124,7 +124,7 @@ public class EMCShopLocator
             md = MessageDigest.getInstance("SHA1");
             digest=Hex.encodeHexString(md.digest(ServerIcon.getBytes()));
             connectedToEMC=digest.equals("56b89ba7fb0a24e889e0e0af30041d7f94c7a0e7");
-        } catch (NoSuchAlgorithmException ex) {
+        } catch (NoSuchAlgorithmException | NullPointerException ex) {
             connectedToEMC=false;
         }
         
