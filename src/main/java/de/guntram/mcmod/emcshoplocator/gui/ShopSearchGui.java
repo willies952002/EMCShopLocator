@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
@@ -19,7 +20,6 @@ public class ShopSearchGui extends GuiScreen {
     
     private GuiButton search, close, buy, sell;
     private GuiButton serverEnabled[];
-    private final int serverButtonOffset=100;
     private GuiTextField pattern, minAmount;
     private MatchingItemScrollList matchingStrings;
     private FoundShopsScrollList foundShops;
@@ -27,6 +27,7 @@ public class ShopSearchGui extends GuiScreen {
     private boolean useSellPrice=false;
     private int lastwidth=0, lastheight=0;
     private String lastChosenItem;              // for rebuilding the sign list when server enabled buttons change
+    private int firstServerButtonIndex;
 
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=130;
@@ -37,6 +38,15 @@ public class ShopSearchGui extends GuiScreen {
     // for map
     private static BlockPos newWaypointPos;
     private static String shopName;
+    
+    private static final int BUTTON_SEARCH=0;
+    private static final int BUTTON_CLOSE=1;
+    private static final int BUTTON_BUY=2;
+    private static final int BUTTON_SELL=3;
+    private static final int BUTTON_ALL=10;
+    private static final int BUTTON_THIS=11;
+    private static final int BUTTON_NONE=12;
+    private static final int BUTTON_FIRST_SERVER=100;
     
     ShopSearchGui() {
         super();
@@ -94,12 +104,18 @@ public class ShopSearchGui extends GuiScreen {
                     command("v "+sign.getRes());
                 } else if (mouseX>xyzx1 && mouseX<this.width) {
                     // System.out.println("set waypoint part1, sign name ="+sign.getItemName());
-                    newWaypointPos=sign.getPos();
+                    BlockPos pos = sign.getPos();
+                    newWaypointPos=pos;
                     shopName=sign.getItemName();
+                    EntityPlayerSP player = Minecraft.getMinecraft().player;
+                    double dx=player.posX-(pos.getX()+0.5);
+                    double dz=player.posZ-(pos.getZ()+0.5);
+                    double dy=player.posY+1-pos.getY();
+                    double distance=Math.sqrt(dx*dx+dz*dz);
+                    player.rotationYaw=player.rotationYawHead=(float)(Math.atan2(dz, dx)*180/Math.PI+90.0);
+                    player.rotationPitch=(float) (Math.atan2(dy, distance)*180/Math.PI);
                 }
             }
-//        } else if (minAmount.) {
-            
         } else {
             super.mouseClicked(mouseX, mouseY, mouseButton);
             pattern.mouseClicked(mouseX, mouseY, mouseButton);
@@ -132,21 +148,25 @@ public class ShopSearchGui extends GuiScreen {
             lastwidth=width; lastheight=height;
         }
         // Seems like the buttons get reset every time the GUI closes so we have to re-add them
-        buttonList.add(close =new GuiButton(1, width-220, height-30, I18n.format("button.close")));
+        buttonList.add(close =new GuiButton(BUTTON_CLOSE, width-220, height-30, I18n.format("button.close")));
         if (width>=minwidth && height>=minheight) {
-            buttonList.add(search=new GuiButton(0, 20, height-30, I18n.format("button.search")));
-            buttonList.add(buy   =new GuiButton(2, width/2+20, 45, 40, 20, I18n.format("button.buy")));
-            buttonList.add(sell  =new GuiButton(3, width-60, 45, 40, 20, I18n.format("button.sell")));
+            buttonList.add(search=new GuiButton(BUTTON_SEARCH, 20, height-30, I18n.format("button.search")));
+            buttonList.add(buy   =new GuiButton(BUTTON_BUY, width/2+20, 45, 40, 20, I18n.format("button.buy")));
+            buttonList.add(sell  =new GuiButton(BUTTON_SELL, width-60, 45, 40, 20, I18n.format("button.sell")));
             markBuyOrSell();
         }
         
+        firstServerButtonIndex=buttonList.size();
         for (int i=0; i<ConfigurationHandler.getNumberOfServers(); i++) {
-            GuiButton newButton=new GuiButton(i+serverButtonOffset, width/2-20, 80+i*20, 40, 20, ConfigurationHandler.getServerName(i));
+            GuiButton newButton=new GuiButton(i+BUTTON_FIRST_SERVER, width/2-20, 80+i*20, 40, 20, ConfigurationHandler.getServerName(i));
             serverEnabled[i]=newButton;
             buttonList.add(newButton);
             newButton.packedFGColour=(ConfigurationHandler.isServerEnabled(i) ? 0x00ff00 : 0x800000);
         }
 
+        buttonList.add(new GuiButton(BUTTON_ALL, width/2-20, 320, 40, 20, I18n.format("button.all")));
+        buttonList.add(new GuiButton(BUTTON_THIS, width/2-20, 340, 40, 20, I18n.format("button.this")));
+        buttonList.add(new GuiButton(BUTTON_NONE, width/2-20, 360, 40, 20, I18n.format("button.none")));
         inited=true;
         Keyboard.enableRepeatEvents(true);
     }
@@ -161,10 +181,31 @@ public class ShopSearchGui extends GuiScreen {
 
         // handle enable/disable server first, and search again in this case
         int buttonID=button.id;
-        if (buttonID>=serverButtonOffset && buttonID<serverButtonOffset+ConfigurationHandler.getNumberOfServers()) {
-            boolean newState=!ConfigurationHandler.isServerEnabled(buttonID-serverButtonOffset);
-            ConfigurationHandler.setServerEnabled(buttonID-serverButtonOffset, newState);
+        boolean newState;
+        if (buttonID>=BUTTON_FIRST_SERVER && buttonID<BUTTON_FIRST_SERVER+ConfigurationHandler.getNumberOfServers()) {
+            newState=!ConfigurationHandler.isServerEnabled(buttonID-BUTTON_FIRST_SERVER);
+            if (GuiScreen.isShiftKeyDown()) {
+                for (int i=0; i<ConfigurationHandler.getNumberOfServers(); i++) {
+                    ConfigurationHandler.setServerEnabled(i, !newState);
+                    GuiButton tempButton = buttonList.get(i+firstServerButtonIndex);
+                    tempButton.packedFGColour=(!newState ? 0x00ff00 : 0x800000);
+                }
+            }
+            ConfigurationHandler.setServerEnabled(buttonID-BUTTON_FIRST_SERVER, newState);
             button.packedFGColour=(newState ? 0x00ff00 : 0x800000);
+            button=search;
+            if (lastChosenItem != null)
+                itemChosen(lastChosenItem);
+        }
+        
+        if (buttonID>=BUTTON_ALL && buttonID<=BUTTON_NONE) {
+            int currentServer=ConfigurationHandler.getServerIndex(EMCShopLocator.instance.serverName);
+            for (int i=0; i<ConfigurationHandler.getNumberOfServers(); i++) {
+                newState=(buttonID==10 || buttonID==BUTTON_THIS && i==currentServer);
+                ConfigurationHandler.setServerEnabled(i, newState);
+                GuiButton tempButton = buttonList.get(i+firstServerButtonIndex);
+                tempButton.packedFGColour=(newState ? 0x00ff00 : 0x800000);
+            }
             button=search;
             if (lastChosenItem != null)
                 itemChosen(lastChosenItem);

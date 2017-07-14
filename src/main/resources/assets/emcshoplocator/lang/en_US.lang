@@ -7,3 +7,7 @@ button.search=Search
 button.close=Close
 button.buy=Buy
 button.sell=Sell
+
+button.all=All
+button.this=This
+button.none=None
