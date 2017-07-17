@@ -3,3 +3,5 @@ gradle
 .gradle
 .nb-gradle
 gradlew
+libs/mod_voxelMap_1.6.21_for_1.11.2.litemod
+libs/Xaeros_Minimap_1.12.4_Forge_1.11.jar
