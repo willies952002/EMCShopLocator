@@ -5,6 +5,7 @@
  */
 package de.guntram.mcmod.emcshoplocator.gui;
 
+import de.guntram.mcmod.emcshoplocator.EMCShopLocator;
 import de.guntram.mcmod.emcshoplocator.ShopSign;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -52,7 +53,7 @@ public class FoundShopsScrollList extends GuiScrollingList {
                     else if (result > 0.0001)
                         return 1;
                     else
-                        return 0;
+                        return a.getServer().compareTo(b.getServer());
                 }
             });
             while (ignoredAtTop<signs.length && getChosenPrice(signs[ignoredAtTop])==-1)
@@ -110,10 +111,14 @@ public class FoundShopsScrollList extends GuiScrollingList {
         if (signs==null || slotIdx<0 || slotIdx >= signs.length-ignoredAtBottom-ignoredAtTop)
                 return;
         slotIdx+=ignoredAtTop;
-        mc.fontRenderer.drawString(signs[slotIdx].getServer().substring(0, 4), this.left+2, slotTop+2, 0xffffff);
-        mc.fontRenderer.drawString(String.format("%.2f", getChosenPricePerItem(signs[slotIdx])), this.left+30, slotTop+2, 0xffffff);
-        mc.fontRenderer.drawString(Integer.toString(signs[slotIdx].getRes()), this.left+80, slotTop+2, 0xffffff);
-        mc.fontRenderer.drawString(signs[slotIdx].getShopOwner(), this.left+130, slotTop+2, 0xffffff);
+        ShopSign slot = signs[slotIdx];
+        int color=0xffffff;
+        if (slot.getServer().equals(EMCShopLocator.instance.serverName))
+            color=0xffff80;
+        mc.fontRenderer.drawString(slot.getServer().substring(0, 4), this.left+2, slotTop+2, color);
+        mc.fontRenderer.drawString(String.format("%.2f", getChosenPricePerItem(slot)), this.left+30, slotTop+2, 0xffffff);
+        mc.fontRenderer.drawString(Integer.toString(slot.getRes()), this.left+80, slotTop+2, 0xffffff);
+        mc.fontRenderer.drawString(slot.getShopOwner(), this.left+130, slotTop+2, 0xffffff);
     }
     
     public ShopSign getSelectedSign() {

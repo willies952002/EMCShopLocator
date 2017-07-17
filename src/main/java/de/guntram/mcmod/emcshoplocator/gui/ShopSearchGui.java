@@ -30,8 +30,8 @@ public class ShopSearchGui extends GuiScreen {
     private int firstServerButtonIndex;
 
     private final int serverx1=2, serverx2=42;
-    private final int resx1=80, resx2=130;
-    private final int xyzx1=170, xyzx2=200;
+    private final int resx1=80, resx2=110;
+    private final int xyzx1=150, xyzx2=180;
     
     private final int minwidth=480, minheight=360;
     
@@ -74,20 +74,20 @@ public class ShopSearchGui extends GuiScreen {
             ShopSign sign;
 
             if ((sign=foundShops.getSelectedSign())!=null) {
-                mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemName(), this.width/2+2, this.height-150, 0xffffff);
+                mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemName(), this.width/2+20, this.height-150, 0xffffff);
                 if (sign.getBuyPrice()>0)
-                    mc.fontRenderer.drawString("buy at "+sign.getBuyPrice()+ " ("+sign.getBuyPerItem()+" per item)", this.width/2+2, this.height-130, 0xffffff);
+                    mc.fontRenderer.drawString("buy at "+sign.getBuyPrice()+ " ("+sign.getBuyPerItem()+" per item)", this.width/2+20, this.height-130, 0xffffff);
                 if (sign.getSellPrice()>0)
-                    mc.fontRenderer.drawString("sell at "+sign.getSellPrice()+ " ("+sign.getSellPerItem()+" per item)", this.width/2+2, this.height-110, 0xffffff);
-                mc.fontRenderer.drawString("Server ", this.width/2+serverx1, this.height-80, 0xffffff);
-                mc.fontRenderer.drawString("§n"+sign.getServer(),  this.width/2+serverx2, this.height-80, 0x80c0ff);
-                mc.fontRenderer.drawString("Residence ", this.width/2+resx1, this.height-80, 0xffffff);
-                mc.fontRenderer.drawString("§n"+Integer.toString(sign.getRes()),  this.width/2+2+resx2, this.height-80, 0x80c0ff);
-                mc.fontRenderer.drawString("XYZ ", this.width/2+xyzx1, this.height-80, 0xffffff);
+                    mc.fontRenderer.drawString("sell at "+sign.getSellPrice()+ " ("+sign.getSellPerItem()+" per item)", this.width/2+20, this.height-110, 0xffffff);
+                mc.fontRenderer.drawString("Server ", this.width/2+20+serverx1, this.height-80, 0xffffff);
+                mc.fontRenderer.drawString("§n"+sign.getServer(),  this.width/2+20+serverx2, this.height-80, 0x80c0ff);
+                mc.fontRenderer.drawString("Res ", this.width/2+20+resx1, this.height-80, 0xffffff);
+                mc.fontRenderer.drawString("§n"+Integer.toString(sign.getRes()),  this.width/2+20+resx2, this.height-80, 0x80c0ff);
+                mc.fontRenderer.drawString("XYZ ", this.width/2+20+xyzx1, this.height-80, 0xffffff);
                 mc.fontRenderer.drawString("§n"+sign.getPos().getX()+"/"+sign.getPos().getY()+"/"+sign.getPos().getZ(),
-                            this.width/2+xyzx2, this.height-80, 0x80c0ff);
+                            this.width/2+20+xyzx2, this.height-80, 0x80c0ff);
                 if (sign.getChoosePosition()!=-1)
-                    mc.fontRenderer.drawString("Choose sign, position "+sign.getChoosePosition(), this.width/2+2, this.height-60, 0xffffff);
+                    mc.fontRenderer.drawString("Choose sign, position "+sign.getChoosePosition(), this.width/2+20, this.height-60, 0xffffff);
             }
         }
     }
@@ -97,7 +97,7 @@ public class ShopSearchGui extends GuiScreen {
         ShopSign sign;
         if (mouseY>this.height-80 && mouseY<this.height-60) {
             if ((sign=foundShops.getSelectedSign())!=null) {
-                mouseX-=this.width/2;
+                mouseX-=this.width/2+20;
                 if (mouseX>serverx1 && mouseX<resx1) {
                     command(sign.getServer());
                 } else if (mouseX>resx1 && mouseX<xyzx1) {
