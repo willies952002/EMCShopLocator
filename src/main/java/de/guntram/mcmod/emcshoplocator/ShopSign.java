@@ -23,6 +23,7 @@ public class ShopSign {
     int buyPrice, sellPrice;    // set to -1 to indicate buying/selling not available
     String shopOwner;           // line 1
     String itemName;            // line 4
+    String modifiedItemName;    // not saved, but used for used-defined translations
     int choosePosition;         // only on CHOOSE signs. -1 otherwise as 0 is a perfectly acceptable position.
     long lastSeenTime;
     private boolean uploaded;
@@ -41,6 +42,7 @@ public class ShopSign {
         this(sign, serverName);
         this.choosePosition=choosePosition;
         this.itemName=itemName;
+        this.modifiedItemName=NameTranslator.applyTranslations(itemName);
     }
 
     // this code assumes the sign has already been checked for shop-sign-ness.
@@ -95,6 +97,7 @@ public class ShopSign {
         // not anymore, separator changed to |
         // itemName=sign.signText[3].getUnformattedText().replace(':', '_');
         itemName=sign.signText[3].getUnformattedText();
+        modifiedItemName=NameTranslator.applyTranslations(itemName);
         choosePosition=-1;       // will may reset in choose-constructor
         try {
             buyPrice=sellPrice=-1;
@@ -117,6 +120,7 @@ public class ShopSign {
         this.sellPrice=sP;
         this.shopOwner=sO;
         this.itemName=it;
+        this.modifiedItemName=NameTranslator.applyTranslations(itemName);
         // This is called when loading from a file, so don't reupload.
         this.uploaded=true;
         markedForDeletion=false;
@@ -221,6 +225,7 @@ public class ShopSign {
     }
     
     public String getItemName() { return itemName; }
+    public String getItemDisplayName() { return modifiedItemName; }
     public String getServer() { return server; }
     public int getRes() { return ResPosition.getResAt(server, pos.getX(), pos.getZ()).resNumber; }
     public String getShopOwner() { return shopOwner; }
@@ -231,7 +236,8 @@ public class ShopSign {
     public int getSellPrice() { return sellPrice; }
     public BlockPos getPos() { return pos; }
     public int getChoosePosition() { return choosePosition; }
-    public void markForDeletion() { markedForDeletion=true; }
+    public long getLastSeen() { return lastSeenTime; }
+    public void markForDeletion() { markedForDeletion=true; uploaded=false; }
     public boolean markedForDeletion() { return markedForDeletion; }
     public int getServerIndex() {
         return ConfigurationHandler.getServerIndex(server);

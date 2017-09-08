@@ -12,6 +12,7 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.input.Keyboard;
@@ -28,6 +29,9 @@ public class ShopSearchGui extends GuiScreen {
     private int lastwidth=0, lastheight=0;
     private String lastChosenItem;              // for rebuilding the sign list when server enabled buttons change
     private int firstServerButtonIndex;
+    private boolean tryAnyway;
+    private int originalScale;
+    private boolean inRecursion;
 
     private final int serverx1=2, serverx2=42;
     private final int resx1=80, resx2=110;
@@ -50,15 +54,16 @@ public class ShopSearchGui extends GuiScreen {
     
     ShopSearchGui() {
         super();
+        originalScale=-1;
+        inRecursion=false;
         // System.out.println("new ShopSearchGui (constructor)");
     }
 
     @Override
     public void drawScreen (int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        super.drawScreen(mouseX, mouseY, partialTicks);
         drawCenteredString(fontRenderer, "Shop search - "+EMCShopLocator.instance.getSignCount()+" signs", width/2, 20, 0xffffff);
-        if (this.width<minwidth || this.height<minheight) {
+        if (!this.tryAnyway && (this.width<minwidth || this.height<minheight)) {
             drawCenteredString(fontRenderer, "I am sorry ", width/2, 50, 0xff0000);
             drawCenteredString(fontRenderer, "Your GUI scale is too big to", width/2, 80, 0xffffff);
             drawCenteredString(fontRenderer, "safely display the shop search GUI.", width/2, 100, 0xffffff);
@@ -67,6 +72,7 @@ public class ShopSearchGui extends GuiScreen {
             
             drawCenteredString(fontRenderer, "Size="+this.width+"x"+this.height+", need at least "+minwidth+"x"+minheight+"", width/2, 180, 0xffff00);
         } else {
+            super.drawScreen(mouseX, mouseY, partialTicks);
             pattern.drawTextBox();
             minAmount.drawTextBox();
             matchingStrings.drawScreen(mouseX, mouseY, partialTicks);
@@ -74,7 +80,7 @@ public class ShopSearchGui extends GuiScreen {
             ShopSign sign;
 
             if ((sign=foundShops.getSelectedSign())!=null) {
-                mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemName(), this.width/2+20, this.height-150, 0xffffff);
+                mc.fontRenderer.drawString(""+sign.getAmount()+" "+sign.getItemDisplayName(), this.width/2+20, this.height-150, 0xffffff);
                 if (sign.getBuyPrice()>0)
                     mc.fontRenderer.drawString("buy at "+sign.getBuyPrice()+ " ("+sign.getBuyPerItem()+" per item)", this.width/2+20, this.height-130, 0xffffff);
                 if (sign.getSellPrice()>0)
@@ -106,7 +112,7 @@ public class ShopSearchGui extends GuiScreen {
                     // System.out.println("set waypoint part1, sign name ="+sign.getItemName());
                     BlockPos pos = sign.getPos();
                     newWaypointPos=pos;
-                    shopName=sign.getItemName();
+                    shopName=sign.getItemDisplayName();
                     EntityPlayerSP player = Minecraft.getMinecraft().player;
                     double dx=player.posX-(pos.getX()+0.5);
                     double dz=player.posZ-(pos.getZ()+0.5);
@@ -134,7 +140,20 @@ public class ShopSearchGui extends GuiScreen {
     
     @Override
     public void initGui() {
+        if (inRecursion)
+            return;
+        int rescale=ConfigurationHandler.getRescaleGUI();
+        if (rescale>=0 && originalScale==-1) {
+            originalScale=mc.gameSettings.guiScale;
+            mc.gameSettings.guiScale=rescale;
+            inited=false;
+            ScaledResolution res=new ScaledResolution(mc);
+            inRecursion=true;
+            setWorldAndResolution(mc, res.getScaledWidth(), res.getScaledHeight());           // <-- this will recursively call initGui again
+            inRecursion=false;
+        }
         if (!inited || lastwidth!=width || lastheight!=height) {
+            tryAnyway=ConfigurationHandler.getTryAnyway();
             // System.out.println("init shop search gui");
             pattern=new GuiTextField(0, fontRenderer, 20, 45, width/2-40-70, 20);
             pattern.setFocused(true);
@@ -173,6 +192,14 @@ public class ShopSearchGui extends GuiScreen {
     
     @Override
     public void onGuiClosed() {
+        if (originalScale>=0) {
+            mc.gameSettings.guiScale=originalScale;
+            originalScale=-1;
+            ScaledResolution res=new ScaledResolution(mc);
+            inRecursion=true;
+            setWorldAndResolution(mc, res.getScaledWidth(), res.getScaledHeight());           // <-- this will recursively call initGui again
+            inRecursion=false;
+        }
         Keyboard.enableRepeatEvents(false);
     }
     
@@ -215,6 +242,7 @@ public class ShopSearchGui extends GuiScreen {
             mc.displayGuiScreen(null);
             mc.setIngameFocus();
         } else if (button==search) {
+            long minimumLastSeen = System.currentTimeMillis() - ConfigurationHandler.getIgnoreOlderThan()*86400*1000;
             HashSet<String> items=new HashSet<String>();
             String searchText=pattern.getText();
             if (searchText.length()>0 && searchText.charAt(0) == '#' && EMCShopLocator.isDeveloperDebugVersion()) {
@@ -237,9 +265,13 @@ public class ShopSearchGui extends GuiScreen {
             for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
                 if (sign.markedForDeletion() || sign.getAmount()<minitems)
                     continue;
-                String itemName=sign.getItemName();
-                if (itemName!=null && regex.matcher(itemName).find() 
-                && ConfigurationHandler.isServerEnabled(sign.getServerIndex()))
+                String itemName=sign.getItemDisplayName();
+                if (
+                        itemName!=null
+                &&      ConfigurationHandler.isServerEnabled(sign.getServerIndex())
+                &&      sign.getLastSeen() >= minimumLastSeen
+                &&      regex.matcher(itemName).find() 
+                )
                     items.add(itemName);
             }
             matchingStrings.setItems(items.toArray(new String[items.size()]));
@@ -279,7 +311,7 @@ public class ShopSearchGui extends GuiScreen {
         for (ShopSign sign:EMCShopLocator.instance.getSigns()) {
             if (sign.markedForDeletion() || sign.getAmount()<minitems)
                 continue;
-            String itemName=sign.getItemName();
+            String itemName=sign.getItemDisplayName();
             if (itemName!=null && itemName.equals(item)
             && ConfigurationHandler.isServerEnabled(sign.getServerIndex()))
                 foundSigns.add(sign);

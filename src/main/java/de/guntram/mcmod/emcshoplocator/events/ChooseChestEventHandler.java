@@ -12,7 +12,6 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -30,7 +29,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class ChooseChestEventHandler {
-    private EMCShopLocator mod;
+    private final EMCShopLocator mod;
     long lastChooseSignClickTime;
     BlockPos lastChooseSignPos;
     Container playerOpenedContainer;
@@ -77,10 +76,9 @@ public class ChooseChestEventHandler {
     @SideOnly(Side.CLIENT)    
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event) {
-        BlockPos signPos;
         if (event!=null && event.getGui()!=null
         && event.getGui().getClass()==net.minecraft.client.gui.inventory.GuiChest.class
-        &&  (signPos=getCurrentlyActiveChooseSign())!=null) {
+        &&  getCurrentlyActiveChooseSign()!=null) {
             GuiChest chest=(GuiChest) event.getGui();
             playerOpenedContainer= chest.inventorySlots;
         }
@@ -101,6 +99,7 @@ public class ChooseChestEventHandler {
             for (ShopSign shopsign:mod.getSigns()) {
                 if (shopsign.getChoosePosition()!=-1
                 &&  shopsign.getPos().getX() == lastChooseSignPos.getX()
+                &&  shopsign.getPos().getY() == lastChooseSignPos.getY()
                 &&  shopsign.getPos().getZ() == lastChooseSignPos.getZ()
                 &&  shopsign.getServer().equals(mod.serverName)) {
                     shopsign.markForDeletion();
