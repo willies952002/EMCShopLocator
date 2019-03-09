@@ -1,7 +1,19 @@
-build
-gradle
+## IntelliJ IDEA ##
+.idea/
+*.iml
+
+## General Java ##
+*.jar
+hs_err_pid*
+
+## Gradle ##
 .gradle
-.nb-gradle
-gradlew
+build/
+!gradle-wrapper.jar
+
+## Minecraft Run Files ##
+run/
+
+## Libraries ##
 libs/mod_voxelMap_1.6.21_for_1.11.2.litemod
 libs/Xaeros_Minimap_1.12.4_Forge_1.11.jar
